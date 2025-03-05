@@ -44,4 +44,14 @@ export class Scene {
     getElementById(id: string): ExcalidrawElement | undefined {
         return this.elements.find((element) => element.id === id);
     }
-} 
+
+    getElementByIdAtPosition(x: number, y: number): ExcalidrawElement | undefined {
+        return this.elements.find(
+            (element) =>
+                x >= element.x &&
+                x <= element.x + element.width &&
+                y >= element.y &&
+                y <= element.y + element.height
+        );
+    }
+}

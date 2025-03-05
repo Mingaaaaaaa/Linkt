@@ -1,29 +1,32 @@
-# Rsbuild project
+---
 
-## Setup
+# **Linkt**  
+**Transform Links into Dynamic Diagrams with AI & Collaboration**  
 
-Install the dependencies:
+---
 
-```bash
-pnpm install
-```
+### ✨ **Core Innovations**  
 
-## Get started
+#### **1. 链接智能解析，自动生成可视化图表**  
+- **从数据链接到交互图表**  
+  粘贴任意数据源链接（如Airtable、Google Sheets、网页URL），Linkt自动解析内容并生成**动态图表**，支持实时数据更新与阈值警报。  
+- **深度内容提取**  
+  结合AI理解网页正文、论文PDF或会议记录，生成**知识图谱**或**时间线视图**，点击图表元素可溯源至原文段落。  
 
-Start the dev server:
+#### **2. 自然语言驱动设计**  
+- **对话式绘图**  
+  输入“将用户登录流程转换为React代码流程图”或“根据上周销售数据绘制预测趋势”，AI即时生成可编辑的图表草稿。  
+- **设计智能顾问**  
+  实时分析布局，提示“按钮颜色不符合品牌规范”或“此流程图缺少异常处理节点”，并提供一键优化建议。  
 
-```bash
-pnpm dev
-```
+#### **3. 场景化插件生态**  
+- **垂直领域工具箱**  
+  - **教育插件**：绘制DNA结构时，自动关联3D模型与生物学注释。  
+  - **工程插件**：电路图合规性检查，标记短路风险或能耗热点。  
+- **企业级扩展**  
+  支持私有插件市场，无缝集成内部系统（如CRM数据拉取、JIRA工单生成甘特图）。  
 
-Build the app for production:
-
-```bash
-pnpm build
-```
-
-Preview the production build locally:
-
-```bash
-pnpm preview
-```
+#### **4. 高效协作体验**  
+- **基于 webTransport 通信**
+  
+  

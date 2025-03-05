@@ -110,4 +110,4 @@ export type SceneData = {
     elements: readonly ExcalidrawElement[];
     appState: AppState;
     scrollToContent?: boolean;
-}; 
+};

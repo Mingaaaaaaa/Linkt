@@ -14,7 +14,7 @@ export const Toolbar: React.FC<ToolbarProps> = () => {
 
   const tools = [
     { name: 'selection', icon: '👆', title: '选择工具' },
-    { name: 'rectangle', icon: '🔲', title: '矩形工具' },
+    { name: 'rectangle', icon: '⬛', title: '矩形工具' },
     { name: 'ellipse', icon: '⭕', title: '椭圆工具' },
     { name: 'line', icon: '📏', title: '线条工具' },
     { name: 'arrow', icon: '➡️', title: '箭头工具' },
