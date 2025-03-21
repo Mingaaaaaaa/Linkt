@@ -1,14 +1,18 @@
 import React from 'react';
 import { ToolType } from './types';
 import { useCanvasStore } from '../store';
+import { CollaborationButton } from './components/CollaborationButton';
+import { CollaborationSession } from '../services/CollaborationService';
 
 interface ToolbarProps {
-  onToolSelect?: (tool: string) => void;
-  currentTool?: string;
+  onOpenCollaborationDialog?: () => void;
+  collaborationSession?: CollaborationSession | null;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = () => {
-  // 使用 Zustand store
+export const Toolbar: React.FC<ToolbarProps> = ({
+  onOpenCollaborationDialog,
+  collaborationSession
+}) => {
   const currentTool = useCanvasStore((state) => state.currentTool);
   const setCurrentTool = useCanvasStore((state) => state.setCurrentTool);
 
@@ -30,33 +34,64 @@ export const Toolbar: React.FC<ToolbarProps> = () => {
   return (
     <div
       style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
         display: 'flex',
-        padding: '8px',
-        background: '#f5f5f5',
-        borderBottom: '1px solid #ddd'
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 16px',
+        backgroundColor: 'white',
+        background: 'transparent',
+        zIndex: 1000,
+        pointerEvents: 'auto'
       }}
     >
-      {tools.map((tool) => (
-        <button
-          key={tool.name}
-          onClick={() => handleToolSelect(tool.name)}
-          title={tool.title}
-          style={{
-            margin: '0 4px',
-            padding: '8px 12px',
-            fontSize: '16px',
-            background: currentTool === tool.name ? '#e0e0e0' : 'transparent',
-            border:
-              currentTool === tool.name
-                ? '1px solid #aaa'
-                : '1px solid transparent',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          {tool.icon}
-        </button>
-      ))}
+      <button
+        style={{
+          padding: '8px',
+          background: 'transparent',
+          cursor: 'pointer',
+          border: 'none'
+        }}
+      >
+        {'☰'}
+      </button>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          border: '1px solid #ddd',
+          padding: '8px ',
+          borderRadius: '8px'
+        }}
+      >
+        {tools.map((tool) => (
+          <button
+            key={tool.name}
+            onClick={() => handleToolSelect(tool.name)}
+            title={tool.title}
+            style={{
+              padding: '8px',
+              background: currentTool === tool.name ? '#e0dfff' : 'transparent',
+              border:
+                currentTool === tool.name
+                  ? '1px solid #aaa'
+                  : '1px solid transparent',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {tool.icon}
+          </button>
+        ))}
+      </div>
+
+      <CollaborationButton
+        onOpenDialog={onOpenCollaborationDialog}
+        collaborationSession={collaborationSession}
+      />
     </div>
   );
 };
