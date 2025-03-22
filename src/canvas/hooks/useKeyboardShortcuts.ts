@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ToolType } from "../types";
 
 interface KeyboardShortcutsProps {
     selectedElementIds: Record<string, boolean>;
@@ -7,6 +8,8 @@ interface KeyboardShortcutsProps {
     editingText: boolean;
     isSpacePressed: boolean;
     setIsSpacePressed: (pressed: boolean) => void;
+    currentTool?: string;
+    setCurrentTool?: (tool: ToolType) => void;
 }
 
 export const useKeyboardShortcuts = ({
@@ -15,7 +18,9 @@ export const useKeyboardShortcuts = ({
     setSelectedElementIds,
     editingText,
     isSpacePressed,
-    setIsSpacePressed
+    setIsSpacePressed,
+    currentTool,
+    setCurrentTool
 }: KeyboardShortcutsProps) => {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,6 +56,14 @@ export const useKeyboardShortcuts = ({
                 // 清空选中状态
                 setSelectedElementIds({});
             }
+
+            // 添加ESC键处理逻辑
+            if (e.key === 'Escape') {
+                if (!editingText && setCurrentTool && currentTool !== 'selection') {
+                    setCurrentTool('selection');
+                    console.log('已切换到选择模式');
+                }
+            }
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
@@ -73,6 +86,8 @@ export const useKeyboardShortcuts = ({
         setSelectedElementIds,
         editingText,
         isSpacePressed,
-        setIsSpacePressed
+        setIsSpacePressed,
+        currentTool,
+        setCurrentTool
     ]);
 };

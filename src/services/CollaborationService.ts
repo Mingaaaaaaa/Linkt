@@ -46,18 +46,21 @@ interface ElementUpdateMessage {
     userId: string;
     elementId: string;
     updates: Partial<ExcalidrawElement>;
+    timestamp?: number; // 添加时间戳
 }
 
 // 元素添加消息
 interface ElementAddMessage {
     userId: string;
     element: ExcalidrawElement;
+    timestamp?: number; // 添加时间戳
 }
 
 // 元素删除消息
 interface ElementDeleteMessage {
     userId: string;
     elementId: string;
+    timestamp?: number; // 添加时间戳
 }
 
 // 场景同步消息
@@ -104,10 +107,12 @@ export class CollaborationService {
             this.socket.on(CollaborationEvent.CONNECT, () => {
                 console.log("Connected to collaboration server");
                 this.reconnectAttempts = 0;
-                this.socket.io.engine.on("upgrade", (transport) => {
-                    console.log(`transport upgraded to ${transport.name}`);
-                    this.emit(CollaborationEvent.UPGRADE);
-                });
+                if (this.socket) {
+                    this.socket.io.engine.on("upgrade", (transport) => {
+                        console.log(`transport upgraded to ${transport.name}`);
+                        this.emit(CollaborationEvent.UPGRADE);
+                    });
+                }
                 this.emit(CollaborationEvent.CONNECT);
             });
 
@@ -179,6 +184,7 @@ export class CollaborationService {
                     if (user) {
                         user.cursor = { x: message.x, y: message.y };
                         this.emit(CollaborationEvent.CURSOR_POSITION, message);
+                        this.session.connectedUsers = [...this.session.connectedUsers];
                     }
                 }
             });
@@ -186,8 +192,6 @@ export class CollaborationService {
             // 添加房间状态更新事件监听
             this.socket.on(CollaborationEvent.ROOM_STATUS_UPDATE, (data: { roomId: string, users: CollaborationUser[] }) => {
                 if (this.session && this.session.roomId === data.roomId) {
-                    console.log("收到房间状态更新:", data);
-                    // 更新当前会话中的用户列表
                     this.session.connectedUsers = data.users;
 
                     // 触发房间状态更新事件
@@ -254,7 +258,7 @@ export class CollaborationService {
             }
         }, 15000); // 15秒一次心跳
     }
-    // 离开协作房间
+
     public leaveRoom(): void {
         if (!this.socket || !this.session) {
             return;
@@ -295,18 +299,21 @@ export class CollaborationService {
         });
     }
 
-    // 更新元素
+    // 更新元素方法增强
     public updateElement(elementId: string, updates: Partial<ExcalidrawElement>): void {
-        if (!this.socket || !this.session) {
-            return;
-        }
+        if (!this.socket || !this.session) return;
 
-        this.socket.emit(CollaborationEvent.UPDATE_ELEMENT, {
+        // 构建包含必要信息的消息
+        const message = {
             roomId: this.session.roomId,
             userId: this.session.userId,
             elementId,
-            updates
-        });
+            updates,
+            timestamp: Date.now()
+        };
+
+        // 发送到服务器
+        this.socket.emit(CollaborationEvent.UPDATE_ELEMENT, message);
     }
 
     // 添加元素
@@ -315,24 +322,34 @@ export class CollaborationService {
             return;
         }
 
-        this.socket.emit(CollaborationEvent.ADD_ELEMENT, {
+        const message = {
             roomId: this.session.roomId,
             userId: this.session.userId,
-            element
-        });
+            element,
+            timestamp: Date.now() // 添加时间戳确保操作顺序
+        };
+
+        // 发送到服务器
+        this.socket.emit(CollaborationEvent.ADD_ELEMENT, message);
     }
 
-    // 删除元素
+    // 删除元素方法增强
     public deleteElement(elementId: string): void {
-        if (!this.socket || !this.session) {
-            return;
-        }
+        if (!this.socket || !this.session) return;
 
-        this.socket.emit(CollaborationEvent.DELETE_ELEMENT, {
+        // 构建包含必要信息的消息
+        const message = {
             roomId: this.session.roomId,
             userId: this.session.userId,
-            elementId
-        });
+            elementId,
+            timestamp: Date.now()
+        };
+
+        // 记录删除操作
+        console.log('发送元素删除:', { elementId });
+
+        // 发送到服务器
+        this.socket.emit(CollaborationEvent.DELETE_ELEMENT, message);
     }
 
     // 更新光标位置
@@ -340,7 +357,6 @@ export class CollaborationService {
         if (!this.socket || !this.session) {
             return;
         }
-
         this.socket.emit(CollaborationEvent.CURSOR_POSITION, {
             roomId: this.session.roomId,
             userId: this.session.userId,

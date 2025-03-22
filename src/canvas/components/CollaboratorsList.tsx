@@ -51,7 +51,7 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
         backgroundColor: 'white',
         borderRadius: '8px',
         boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
-        width: '250px',
+        width: 'max-content',
         marginBottom: '10px',
         zIndex: 1000,
         animation: 'slideUp 0.2s ease-out',
@@ -82,9 +82,7 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor:
-                  user.color ||
-                  `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                backgroundColor: `#${user.id.split('_')[1].substring(7)}`,
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: '12px'
@@ -101,7 +99,8 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
                     style={{
                       marginLeft: '5px',
                       fontSize: '11px',
-                      color: '#888'
+                      color: '#888',
+                      marginRight: '5px'
                     }}
                   >
                     (你)

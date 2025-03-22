@@ -20,7 +20,6 @@ import { TextEditor } from './components/TextEditor';
 import { CollaborationDialog } from './components/CollaborationDialog';
 import { CollaborationStatusBar } from './components/CollaborationStatusBar';
 import { CollaborationCursors } from './components/CollaborationCursors';
-import { CollaboratorsList } from './components/CollaboratorsList';
 import {
   collaborationService,
   CollaborationEvent,
@@ -39,8 +38,10 @@ interface CanvasProps {
   height: number;
   showCollaborationDialog?: boolean;
   collaborationSession?: CollaborationSession | null;
-  setShowCollaborationDialog?: (show: boolean) => void;
-  onCollaborationSessionChange?: (session: CollaborationSession | null) => void;
+  setShowCollaborationDialog: (show: boolean) => void;
+  onCollaborationSessionChange: (
+    session: CollaborationSession | null | undefined
+  ) => void;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
@@ -57,12 +58,12 @@ export const Canvas: React.FC<CanvasProps> = ({
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   // 添加协同编辑相关状态
-  const [showCollaboratorsList, setShowCollaboratorsList] = useState(false);
   const lastCursorPositionRef = useRef<PointerCoords | null>(null);
   const throttleTimeoutRef = useRef<any>(null);
 
   // Zustand store hooks
   const currentTool = useCanvasStore((state) => state.currentTool);
+  const setCurrentTool = useCanvasStore((state) => state.setCurrentTool);
   const selectedElementIds = useCanvasStore(
     (state) => state.selectedElementIds
   );
@@ -112,45 +113,71 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  // 创建带协同功能的操作函数
-  const handleAddElementWithCollaboration = (element: any) => {
-    addElement(element);
+  // 创建来源标记，用于区分本地和远程操作
+  const UPDATE_SOURCE = {
+    LOCAL: 'local',
+    REMOTE: 'remote'
+  };
 
-    // 如果在协同会话中，发送元素添加消息
-    if (collaborationSession && collaborationSession.isConnected) {
-      collaborationService.addElement(element);
+  // 创建带协同功能的操作函数，增加操作来源标记
+  const handleAddElementWithCollaboration = (
+    element: any,
+    source = UPDATE_SOURCE.LOCAL
+  ) => {
+    // 只有本地操作才需要发送到服务器
+    if (source === UPDATE_SOURCE.LOCAL) {
+      addElement(element);
+      // 如果在协同会话中，发送元素添加消息
+      if (collaborationSession && collaborationSession.isConnected) {
+        console.log('添加元素:', element);
+        // 发送前标记元素来源，防止循环
+        collaborationService.addElement(element);
+      }
+    } else {
+      // 远程操作直接应用，不再发送
+      addElement(element);
     }
   };
 
   const handleUpdateElementWithCollaboration = (
     elementId: string,
-    updates: any
+    updates: any,
+    source = UPDATE_SOURCE.LOCAL
   ) => {
-    updateElement(elementId, updates);
+    // 只有本地操作才需要发送到服务器
+    if (source === UPDATE_SOURCE.LOCAL) {
+      // 首先应用本地更新
+      updateElement(elementId, updates);
 
-    // 如果在协同会话中，发送元素更新消息
-    if (collaborationSession && collaborationSession.isConnected) {
-      collaborationService.updateElement(elementId, updates);
+      // 如果在协同会话中，发送元素更新消息
+      if (collaborationSession && collaborationSession.isConnected) {
+        console.log('发送更新元素:', { elementId, updates });
+        collaborationService.updateElement(elementId, updates);
+      }
+    } else {
+      // 远程操作直接应用，不再发送
+      console.log('应用远程更新:', { elementId, updates });
+      updateElement(elementId, updates);
     }
   };
 
-  const handleDeleteElementWithCollaboration = (elementId: string) => {
-    deleteElement(elementId);
+  const handleDeleteElementWithCollaboration = (
+    elementId: string,
+    source = UPDATE_SOURCE.LOCAL
+  ) => {
+    // 只有本地操作才需要发送到服务器
+    if (source === UPDATE_SOURCE.LOCAL) {
+      // 首先应用本地删除
+      deleteElement(elementId);
 
-    // 如果在协同会话中，发送元素删除消息
-    if (collaborationSession && collaborationSession.isConnected) {
-      collaborationService.deleteElement(elementId);
+      // 如果在协同会话中，发送元素删除消息
+      if (collaborationSession && collaborationSession.isConnected) {
+        collaborationService.deleteElement(elementId);
+      }
+    } else {
+      deleteElement(elementId);
     }
   };
-
-  // // 使用hooks，带上协同功能
-  // const {
-  //   editingText,
-  //   setEditingText,
-  //   handleTextInputChange,
-  //   handleTextInputBlur,
-  //   handleTextInputKeyDown
-  // } = useTextEditor(handleUpdateElementWithCollaboration, forceRender);
 
   // 使用拆分出的hooks
   const {
@@ -208,51 +235,130 @@ export const Canvas: React.FC<CanvasProps> = ({
     setSelectedElementIds,
     editingText: !!editingText,
     isSpacePressed,
-    setIsSpacePressed
+    setIsSpacePressed,
+    currentTool,
+    setCurrentTool
   });
 
-  // 协同编辑事件监听
+  // 完善协同编辑事件监听
   useEffect(() => {
-    // 元素更新事件处理
+    // 存储上次处理的操作时间戳，用于防止重复处理
+    const lastProcessedOperations = {
+      update: new Map<string, number>(),
+      add: new Map<string, number>(),
+      delete: new Map<string, number>()
+    };
+
+    // 元素更新事件处理优化
     const handleElementUpdate = (data: {
       elementId: string;
       updates: any;
       userId: string;
+      timestamp?: number;
     }) => {
       // 忽略自己发出的更新
       if (collaborationSession && data.userId === collaborationSession.userId) {
         return;
       }
 
-      console.log('收到元素更新:', data);
-      updateElement(data.elementId, data.updates);
+      // 检查是否已处理过该操作（防止在不同连接收到重复消息）
+      const operationKey = `${data.userId}-${data.elementId}-${
+        data.timestamp || Date.now()
+      }`;
+      const lastTimestamp =
+        lastProcessedOperations.update.get(operationKey) || 0;
+      const currentTimestamp = data.timestamp || Date.now();
+
+      if (currentTimestamp <= lastTimestamp) {
+        console.log('忽略重复或过期的元素更新');
+        return;
+      }
+
+      // 更新处理时间戳
+      lastProcessedOperations.update.set(operationKey, currentTimestamp);
+
+      console.log('接收到远程元素更新:', data);
+
+      // 使用标记为远程来源的方法应用更新
+      handleUpdateElementWithCollaboration(
+        data.elementId,
+        data.updates,
+        UPDATE_SOURCE.REMOTE
+      );
+
+      // 触发重新渲染
       requestAnimationFrame(forceRender);
     };
 
     // 添加元素事件处理
-    const handleElementAdd = (data: { element: any; userId: string }) => {
+    const handleElementAdd = (data: {
+      element: any;
+      userId: string;
+      timestamp?: number;
+    }) => {
       // 忽略自己发出的添加
       if (collaborationSession && data.userId === collaborationSession.userId) {
         return;
       }
 
-      console.log('收到新元素:', data);
-      addElement(data.element);
+      // 检查是否已处理过该操作
+      const operationKey = `${data.userId}-${data.element.id}`;
+      const lastTimestamp = lastProcessedOperations.add.get(operationKey) || 0;
+      const currentTimestamp = data.timestamp || Date.now();
+
+      if (currentTimestamp <= lastTimestamp) {
+        console.log('忽略重复或过期的元素添加');
+        return;
+      }
+
+      // 更新处理时间戳
+      lastProcessedOperations.add.set(operationKey, currentTimestamp);
+
+      console.log('应用远程元素添加:', data);
+
+      // 使用标记为远程来源的方法应用添加
+      handleAddElementWithCollaboration(data.element, UPDATE_SOURCE.REMOTE);
+
+      // 触发重新渲染
       requestAnimationFrame(forceRender);
     };
 
-    // 删除元素事件处理
+    // 删除元素事件处理优化
     const handleElementDelete = (data: {
       elementId: string;
       userId: string;
+      timestamp?: number;
     }) => {
       // 忽略自己发出的删除
       if (collaborationSession && data.userId === collaborationSession.userId) {
         return;
       }
 
-      console.log('收到元素删除:', data);
-      deleteElement(data.elementId);
+      // 检查是否已处理过该操作
+      const operationKey = `${data.userId}-${data.elementId}-${
+        data.timestamp || Date.now()
+      }`;
+      const lastTimestamp =
+        lastProcessedOperations.delete.get(operationKey) || 0;
+      const currentTimestamp = data.timestamp || Date.now();
+
+      if (currentTimestamp <= lastTimestamp) {
+        console.log('忽略重复或过期的元素删除');
+        return;
+      }
+
+      // 更新处理时间戳
+      lastProcessedOperations.delete.set(operationKey, currentTimestamp);
+
+      console.log('接收到远程元素删除:', data);
+
+      // 使用标记为远程来源的方法应用删除
+      handleDeleteElementWithCollaboration(
+        data.elementId,
+        UPDATE_SOURCE.REMOTE
+      );
+
+      // 触发重新渲染
       requestAnimationFrame(forceRender);
     };
 
@@ -333,22 +439,54 @@ export const Canvas: React.FC<CanvasProps> = ({
       }
     };
 
+    // 处理其他用户的光标位置
+    const updateOtherCursor = (data: {
+      userId: string;
+      x: number;
+      y: number;
+    }) => {
+      if (!collaborationSession) return;
+
+      // 创建一个新的会话对象副本
+      const newSession = { ...collaborationSession };
+      const users = [...newSession.connectedUsers];
+
+      // 查找并更新用户
+      const userIndex = users.findIndex((user) => user.id === data.userId);
+      if (userIndex === -1) return;
+
+      // 创建新对象以确保引用变化
+      const updatedUser = { ...users[userIndex] };
+      updatedUser.cursor = { x: data.x, y: data.y };
+      users[userIndex] = updatedUser;
+
+      // 更新整个用户数组
+      newSession.connectedUsers = users;
+
+      // 更新状态，触发重新渲染
+      onCollaborationSessionChange(newSession);
+    };
+
     // 注册事件监听
     collaborationService.on(
       CollaborationEvent.UPDATE_ELEMENT,
       handleElementUpdate
     );
-    collaborationService.on(CollaborationEvent.ADD_ELEMENT, handleElementAdd);
     collaborationService.on(
       CollaborationEvent.DELETE_ELEMENT,
       handleElementDelete
     );
+    collaborationService.on(CollaborationEvent.ADD_ELEMENT, handleElementAdd);
     collaborationService.on(CollaborationEvent.SYNC_SCENE, handleSceneSync);
     collaborationService.on(CollaborationEvent.USER_JOIN, handleUserJoin);
     collaborationService.on(CollaborationEvent.USER_LEAVE, handleUserLeave);
     collaborationService.on(
       CollaborationEvent.ROOM_STATUS_UPDATE,
       handleRoomStatusUpdate
+    );
+    collaborationService.on(
+      CollaborationEvent.CURSOR_POSITION,
+      updateOtherCursor
     );
 
     // 清理函数
@@ -358,12 +496,12 @@ export const Canvas: React.FC<CanvasProps> = ({
         handleElementUpdate
       );
       collaborationService.off(
-        CollaborationEvent.ADD_ELEMENT,
-        handleElementAdd
-      );
-      collaborationService.off(
         CollaborationEvent.DELETE_ELEMENT,
         handleElementDelete
+      );
+      collaborationService.off(
+        CollaborationEvent.ADD_ELEMENT,
+        handleElementAdd
       );
       collaborationService.off(CollaborationEvent.SYNC_SCENE, handleSceneSync);
       collaborationService.off(CollaborationEvent.USER_JOIN, handleUserJoin);
@@ -371,6 +509,10 @@ export const Canvas: React.FC<CanvasProps> = ({
       collaborationService.off(
         CollaborationEvent.ROOM_STATUS_UPDATE,
         handleRoomStatusUpdate
+      );
+      collaborationService.off(
+        CollaborationEvent.CURSOR_POSITION,
+        updateOtherCursor
       );
     };
   }, [
@@ -384,36 +526,70 @@ export const Canvas: React.FC<CanvasProps> = ({
     onCollaborationSessionChange
   ]);
 
-  // 定期发送光标位置
+  // 修改定期发送光标位置的逻辑，提高更新频率
   useEffect(() => {
-    if (!collaborationSession) {
-      return;
-    }
+    if (!collaborationSession || !collaborationSession.isConnected) return;
+
+    // 当有其他用户在房间时才发送光标位置
+    if (collaborationSession.connectedUsers.length <= 1) return;
 
     const sendCursorPosition = () => {
-      if (lastCursorPositionRef.current) {
-        collaborationService.updateCursorPosition(
-          lastCursorPositionRef.current.x,
-          lastCursorPositionRef.current.y
-        );
+      try {
+        if (lastCursorPositionRef.current) {
+          collaborationService.updateCursorPosition(
+            lastCursorPositionRef.current.x,
+            lastCursorPositionRef.current.y
+          );
+        }
+      } catch (error) {
+        console.error('发送光标位置时发生错误:', error);
       }
-      throttleTimeoutRef.current = null;
     };
 
-    // 设置定时器，节流发送光标位置
-    const intervalId = setInterval(() => {
-      if (lastCursorPositionRef.current && !throttleTimeoutRef.current) {
-        throttleTimeoutRef.current = setTimeout(sendCursorPosition, 50);
-      }
-    }, 100);
+    // 提高发送频率到300ms，平衡网络负载和响应速度
+    const intervalId = setInterval(sendCursorPosition, 300);
 
     return () => {
       clearInterval(intervalId);
-      if (throttleTimeoutRef.current) {
-        clearTimeout(throttleTimeoutRef.current);
-      }
     };
   }, [collaborationSession]);
+
+  // 添加混合同步策略
+  useEffect(() => {
+    // 设定定期全量同步的间隔（比如每30秒）
+    const syncInterval = 30000;
+    let lastSyncTime = Date.now();
+
+    // 定期全量同步
+    const periodicSync = setInterval(() => {
+      if (collaborationSession && collaborationSession.isConnected) {
+        // 只有当有其他用户在房间时才进行同步
+        if (collaborationSession.connectedUsers.length > 1) {
+          console.log('执行定期全量同步...');
+          const elements = [...getElements()];
+          const appState = {
+            zoom: zoom,
+            scrollX: scrollX,
+            scrollY: scrollY,
+            viewBackgroundColor: viewBackgroundColor
+          };
+          collaborationService.syncScene(elements, appState);
+          lastSyncTime = Date.now();
+        }
+      }
+    }, syncInterval);
+
+    return () => {
+      clearInterval(periodicSync);
+    };
+  }, [
+    collaborationSession,
+    getElements,
+    zoom,
+    scrollX,
+    scrollY,
+    viewBackgroundColor
+  ]);
 
   // 初始化渲染器和示例元素
   useEffect(() => {
@@ -526,11 +702,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [width, height]);
 
-  // 协同编辑相关函数
-  const handleOpenCollaborationDialog = () => {
-    setShowCollaborationDialog(true);
-  };
-
   const handleCloseCollaborationDialog = () => {
     setShowCollaborationDialog(false);
   };
@@ -540,7 +711,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     setShowCollaborationDialog(false);
 
     // 加入房间后立即同步当前场景
-    const elements = getNonDeletedElements();
+    const elements = [...getElements()];
     const appState = {
       zoom: zoom,
       scrollX: scrollX,
@@ -555,15 +726,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     onCollaborationSessionChange(null);
   };
 
-  const handleShowCollaborators = () => {
-    setShowCollaboratorsList(true);
-  };
-
-  const handleCloseCollaboratorsList = () => {
-    setShowCollaboratorsList(false);
-  };
-
-  // 修改 handleMouseMove 函数，记录光标位置并发送给协作者
+  // 修改 handleMouseMove 函数，确保光标位置实时更新
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (editingText) return;
 
@@ -572,6 +735,23 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     // 保存光标位置，用于协同编辑
     lastCursorPositionRef.current = sceneCoords;
+
+    // 如果有其他人在房间，且距离上次发送已超过100ms，立即发送位置更新
+    if (
+      collaborationSession &&
+      collaborationSession.connectedUsers.length > 1 &&
+      !throttleTimeoutRef.current
+    ) {
+      throttleTimeoutRef.current = setTimeout(() => {
+        throttleTimeoutRef.current = null;
+        if (lastCursorPositionRef.current) {
+          collaborationService.updateCursorPosition(
+            lastCursorPositionRef.current.x,
+            lastCursorPositionRef.current.y
+          );
+        }
+      }, 100);
+    }
 
     if (panInfo) {
       handlePan(clientX, clientY, scrollX, scrollY);
@@ -596,20 +776,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       handleElementCreationResize(sceneCoords, creatingElement);
     }
   };
-
-  // 添加Ctrl+Shift+C快捷键打开协同对话框
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (editingText) return;
-
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
-        handleOpenCollaborationDialog();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editingText]);
 
   // 组件卸载时断开连接
   useEffect(() => {
@@ -662,7 +828,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       setZoom(newZoom);
       setScrollPosition(newScrollX, newScrollY);
     } else {
-      // Pan canvas
       setScrollPosition(scrollX - deltaX, scrollY - deltaY);
     }
   };
@@ -946,9 +1111,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         return;
     }
 
-    // 添加元素到 store
-    addElement(newElement);
-
+    handleAddElementWithCollaboration(newElement);
     // 选中新创建的元素
     setSelectedElementIds({ [newElement.id]: true });
   };
@@ -998,7 +1161,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (!canvasRect) return;
 
         // 修正位置计算，使用更精确的坐标转换
-        // 不要添加 canvasRect.top 和 canvasRect.left，因为 clientX/Y 已经是相对于视口的坐标
         const x = element.x * zoom.value + scrollX;
         const y = element.y * zoom.value + scrollY - canvasRect.top;
         const width = element.width * zoom.value;
@@ -1070,7 +1232,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         <CollaborationStatusBar
           session={collaborationSession}
           onLeaveRoom={handleLeaveRoom}
-          onShowCollaborators={handleShowCollaborators}
         />
       )}
 
@@ -1082,15 +1243,6 @@ export const Canvas: React.FC<CanvasProps> = ({
           zoom={zoom.value}
           scrollX={scrollX}
           scrollY={scrollY}
-        />
-      )}
-
-      {/* 协作者列表 */}
-      {showCollaboratorsList && collaborationSession && (
-        <CollaboratorsList
-          users={collaborationSession.connectedUsers}
-          currentUserId={collaborationSession.userId}
-          onClose={handleCloseCollaboratorsList}
         />
       )}
     </div>

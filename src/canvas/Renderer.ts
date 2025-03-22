@@ -1,5 +1,5 @@
 import rough from "roughjs";
-import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement, ExcalidrawLineElement, ExcalidrawArrowElement } from "./types";
+import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement } from "./types";
 
 // 定义拉伸点的位置
 export enum ResizeHandle {

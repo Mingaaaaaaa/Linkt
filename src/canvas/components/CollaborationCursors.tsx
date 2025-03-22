@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CollaborationUser } from '../../services/CollaborationService';
 
 interface CollaborationCursorsProps {
@@ -16,61 +16,69 @@ export const CollaborationCursors: React.FC<CollaborationCursorsProps> = ({
   scrollX,
   scrollY
 }) => {
+  const [cursors, setCursors] = useState<CollaborationUser[]>([]);
+
+  // 当users发生变化时更新cursors
+  useEffect(() => {
+    const usersWithCursors = users.filter(
+      (user) => user.id !== currentUserId && user.cursor
+    );
+    setCursors(usersWithCursors);
+  }, [users, currentUserId]);
+
   return (
     <>
-      {users.map((user) => {
-        // 不显示当前用户的光标
-        if (user.id === currentUserId || !user.cursor) {
-          return null;
-        }
+      {cursors.map((user) => {
+        if (!user.cursor) return null;
 
-        const { x, y } = user.cursor;
-        const cursorX = x * zoom + scrollX;
-        const cursorY = y * zoom + scrollY;
+        // 计算光标在视口中的位置
+        const x = user.cursor.x * zoom + scrollX;
+        const y = user.cursor.y * zoom + scrollY;
 
         return (
           <div
-            key={user.id}
+            key={`cursor-${user.id}`}
             style={{
               position: 'absolute',
-              left: `${cursorX}px`,
-              top: `${cursorY}px`,
-              zIndex: 1000,
-              pointerEvents: 'none', // 确保光标不会阻挡用户交互
-              transition: 'transform 0.1s ease' // 平滑光标移动
+              left: `${x}px`,
+              top: `${y}px`,
+              pointerEvents: 'none',
+              zIndex: 100,
+              transform: 'translate(-50%, -50%)',
+              transition: 'left 0.1s ease-out, top 0.1s ease-out'  
             }}
           >
-            {/* 光标图标 */}
+            {/* 光标图形 */}
             <svg
-              width='16'
-              height='16'
-              viewBox='0 0 16 16'
-              fill={user.color}
-              style={{
-                transform: 'translate(-2px, -2px)',
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))'
-              }}
+              width='24'
+              height='24'
+              viewBox='0 0 24 24'
+              fill='none'
+              xmlns='http://www.w3.org/2000/svg'
             >
-              <polygon points='0,0 8,14 10,8 16,8' />
+              <path
+                d='M7 2L18 13L14 14L16 22L13 23L10 15L7 18L7 2Z'
+                fill={`#${user.id.split('_')[1].substring(7)}`}
+                stroke='#ffffff'
+                strokeWidth='1'
+              />
             </svg>
 
-            {/* 用户名气泡 */}
+            {/* 用户名标签 */}
             <div
               style={{
-                backgroundColor: user.color,
-                color: '#fff',
+                position: 'absolute',
+                left: '24px',
+                top: '0',
+                backgroundColor: `#${user.id.split('_')[1].substring(7)}`,
+                color: 'white',
                 padding: '2px 6px',
-                borderRadius: '10px',
+                borderRadius: '4px',
                 fontSize: '12px',
-                marginTop: '3px',
-                whiteSpace: 'nowrap',
-                maxWidth: '150px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                whiteSpace: 'nowrap'
               }}
             >
-              {user.name}
+              {user.username}
             </div>
           </div>
         );

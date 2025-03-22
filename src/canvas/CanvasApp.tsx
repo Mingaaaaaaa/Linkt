@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Canvas } from './Canvas';
 import { Toolbar } from './Toolbar';
 import { Device } from './types';
-import { collaborationService } from '../services/CollaborationService';
+import {
+  collaborationService,
+  CollaborationSession
+} from '../services/CollaborationService';
 
 // 创建上下文
 export const DeviceContext = React.createContext<Device>({
@@ -24,7 +27,9 @@ export const CanvasApp: React.FC = () => {
   });
 
   // 从Canvas组件获取协同会话状态和对话框打开函数
-  const [collaborationSession, setCollaborationSession] = useState(null);
+  const [collaborationSession, setCollaborationSession] = useState<
+    CollaborationSession | undefined | null
+  >(null);
   const [showCollaborationDialog, setShowCollaborationDialog] = useState(false);
 
   const handleOpenCollaborationDialog = () => {
@@ -32,7 +37,7 @@ export const CanvasApp: React.FC = () => {
   };
 
   // 获取协同会话状态的回调
-  const handleCollaborationSessionChange = (session) => {
+  const handleCollaborationSessionChange = (session: any) => {
     setCollaborationSession(session);
   };
 
@@ -85,8 +90,8 @@ export const CanvasApp: React.FC = () => {
         <Canvas
           width={dimensions.width}
           height={dimensions.height}
-          showCollaborationDialog={showCollaborationDialog}
           collaborationSession={collaborationSession}
+          showCollaborationDialog={showCollaborationDialog}
           setShowCollaborationDialog={setShowCollaborationDialog}
           onCollaborationSessionChange={handleCollaborationSessionChange}
         />
