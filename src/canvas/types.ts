@@ -18,6 +18,9 @@ export type ExcalidrawElement = {
     locked?: boolean;
     link?: string;
     boundElements?: { id: string; type: "arrow" | "text" }[];
+    version?: number;
+    lastModified?: number;
+    originalVersion?: number; // 添加原始版本号，用于冲突检测
 };
 
 export type NonDeletedExcalidrawElement = ExcalidrawElement & {

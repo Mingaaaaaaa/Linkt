@@ -51,7 +51,7 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
         backgroundColor: 'white',
         borderRadius: '8px',
         boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
-        width: 'max-content',
+        width: '250px',
         marginBottom: '10px',
         zIndex: 1000,
         animation: 'slideUp 0.2s ease-out',
@@ -100,7 +100,6 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
                       marginLeft: '5px',
                       fontSize: '11px',
                       color: '#888',
-                      marginRight: '5px'
                     }}
                   >
                     (你)
@@ -135,7 +134,7 @@ export const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
         }}
       />
 
-      <style jsx>
+      <style>
         {`
           @keyframes slideUp {
             from {

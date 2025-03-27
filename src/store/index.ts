@@ -89,7 +89,13 @@ export const useCanvasStore = create<CanvasStore>()(
             // 元素操作
             addElement: (element: ExcalidrawElement) => {
                 const { scene } = get()
-                scene.addElement(element)
+                // 为每个新添加的元素添加版本标记
+                const elementWithVersion = {
+                    ...element,
+                    version: 1, // 初始版本为1
+                    lastModified: Date.now()
+                };
+                scene.addElement(elementWithVersion)
                 // 更新 elements 数组用于持久化
                 set({
                     scene: scene,
@@ -97,9 +103,33 @@ export const useCanvasStore = create<CanvasStore>()(
                 })
             },
 
-            updateElement: (elementId: string, updates: Partial<ExcalidrawElement>) => {
+            updateElement: (elementId: string, updates: Partial<ExcalidrawElement>
+            ) => {
                 const { scene } = get()
-                scene.updateElement(elementId, updates)
+                const element = scene.getElementById(elementId);
+
+                // 如果元素存在，保留原始版本号并增加版本号
+                if (element) {
+                    // 检查是否已经在updates中提供了版本信息
+                    const currentVersion = updates.version || element.version || 1;
+                    // 如果updates中没有提供新版本，则自动增加
+                    const newVersion = updates.version ? updates.version : currentVersion + 1;
+
+                    const updatedElement = {
+                        ...element,
+                        ...updates,
+                        version: newVersion,
+                        lastModified: updates.lastModified || Date.now()
+                    };
+                    scene.updateElement(elementId, updatedElement)
+                } else {
+                    scene.updateElement(elementId, {
+                        ...updates,
+                        version: updates.version || 1,
+                        lastModified: updates.lastModified || Date.now()
+                    })
+                }
+
                 set({
                     scene: scene,
                     elements: [...scene.getElements()]
@@ -149,4 +179,4 @@ export const useCanvasStore = create<CanvasStore>()(
             })
         }
     )
-) 
+)

@@ -124,17 +124,21 @@ export const Canvas: React.FC<CanvasProps> = ({
     element: any,
     source = UPDATE_SOURCE.LOCAL
   ) => {
+    // 确保元素有版本和时间戳
+    if (!element.version) {
+      element.version = 1;
+    }
+    if (!element.lastModified) {
+      element.lastModified = Date.now();
+    }
+
     // 只有本地操作才需要发送到服务器
     if (source === UPDATE_SOURCE.LOCAL) {
       addElement(element);
-      // 如果在协同会话中，发送元素添加消息
       if (collaborationSession && collaborationSession.isConnected) {
-        console.log('添加元素:', element);
-        // 发送前标记元素来源，防止循环
         collaborationService.addElement(element);
       }
     } else {
-      // 远程操作直接应用，不再发送
       addElement(element);
     }
   };
@@ -144,19 +148,28 @@ export const Canvas: React.FC<CanvasProps> = ({
     updates: any,
     source = UPDATE_SOURCE.LOCAL
   ) => {
+    // 获取当前元素
+    const currentElement = useCanvasStore
+      .getState()
+      .scene.getElementById(elementId);
+
+    // 如果元素存在，记录原始版本号用于冲突检测
+    if (currentElement && source === UPDATE_SOURCE.LOCAL) {
+      updates = {
+        ...updates,
+        originalVersion: currentElement.version || 1,
+        version: (currentElement.version || 1) + 1,
+        lastModified: Date.now()
+      };
+    }
+
     // 只有本地操作才需要发送到服务器
     if (source === UPDATE_SOURCE.LOCAL) {
-      // 首先应用本地更新
       updateElement(elementId, updates);
-
-      // 如果在协同会话中，发送元素更新消息
       if (collaborationSession && collaborationSession.isConnected) {
-        console.log('发送更新元素:', { elementId, updates });
         collaborationService.updateElement(elementId, updates);
       }
     } else {
-      // 远程操作直接应用，不再发送
-      console.log('应用远程更新:', { elementId, updates });
       updateElement(elementId, updates);
     }
   };
@@ -255,6 +268,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       updates: any;
       userId: string;
       timestamp?: number;
+      version?: number;
     }) => {
       // 忽略自己发出的更新
       if (collaborationSession && data.userId === collaborationSession.userId) {
@@ -277,16 +291,68 @@ export const Canvas: React.FC<CanvasProps> = ({
       // 更新处理时间戳
       lastProcessedOperations.update.set(operationKey, currentTimestamp);
 
-      console.log('接收到远程元素更新:', data);
+      // 冲突处理: 检查本地元素的版本和时间戳
+      const localElement = useCanvasStore
+        .getState()
+        .scene.getElementById(data.elementId);
 
-      // 使用标记为远程来源的方法应用更新
-      handleUpdateElementWithCollaboration(
-        data.elementId,
-        data.updates,
-        UPDATE_SOURCE.REMOTE
-      );
+      if (localElement) {
+        const localVersion = localElement.version || 1;
+        const localTimestamp = localElement.lastModified || 0;
+        const remoteVersion = data.updates.version || data.version || 1;
+        const remoteTimestamp = data.timestamp || Date.now();
 
-      // 触发重新渲染
+        // 检查是否存在冲突(本地也有修改)
+        if (localVersion !== (data.updates.originalVersion || 1)) {
+          console.log('冲突检测:', {
+            localVersion,
+            localTimestamp,
+            remoteVersion,
+            remoteTimestamp
+          });
+          // 优先使用版本号较大的更改
+          if (remoteVersion > localVersion) {
+            console.log('采用远程版本(版本号更高)');
+            handleUpdateElementWithCollaboration(
+              data.elementId,
+              data.updates,
+              UPDATE_SOURCE.REMOTE
+            );
+          } else if (remoteVersion < localVersion) {
+            console.log('保留本地版本(版本号更高)');
+            // 但发送我们的版本到远程，确保同步
+            collaborationService.updateElement(data.elementId, localElement);
+          } else {
+            // 版本号相同，使用时间戳决定
+            if (remoteTimestamp > localTimestamp) {
+              console.log('采用远程版本(时间戳更新)');
+              handleUpdateElementWithCollaboration(
+                data.elementId,
+                data.updates,
+                UPDATE_SOURCE.REMOTE
+              );
+            } else {
+              console.log('保留本地版本(时间戳更新)');
+              collaborationService.updateElement(data.elementId, localElement);
+            }
+          }
+        } else {
+          // 没有冲突，直接应用远程更新
+          handleUpdateElementWithCollaboration(
+            data.elementId,
+            data.updates,
+            UPDATE_SOURCE.REMOTE
+          );
+        }
+      } else {
+        // 本地不存在此元素，直接应用远程更新
+        handleUpdateElementWithCollaboration(
+          data.elementId,
+          data.updates,
+          UPDATE_SOURCE.REMOTE
+        );
+      }
+
       requestAnimationFrame(forceRender);
     };
 
@@ -319,7 +385,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       // 使用标记为远程来源的方法应用添加
       handleAddElementWithCollaboration(data.element, UPDATE_SOURCE.REMOTE);
 
-      // 触发重新渲染
       requestAnimationFrame(forceRender);
     };
 

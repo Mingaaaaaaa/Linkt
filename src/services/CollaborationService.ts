@@ -46,7 +46,9 @@ interface ElementUpdateMessage {
     userId: string;
     elementId: string;
     updates: Partial<ExcalidrawElement>;
-    timestamp?: number; // 添加时间戳
+    timestamp: number; // 确保始终有时间戳
+    version: number;  // 确保始终有版本号
+    originalVersion?: number; // 添加原始版本号，用于冲突检测
 }
 
 // 元素添加消息
@@ -54,6 +56,7 @@ interface ElementAddMessage {
     userId: string;
     element: ExcalidrawElement;
     timestamp?: number; // 添加时间戳
+    version?: number;  // 添加版本号
 }
 
 // 元素删除消息
@@ -61,6 +64,7 @@ interface ElementDeleteMessage {
     userId: string;
     elementId: string;
     timestamp?: number; // 添加时间戳
+    version?: number;  // 添加版本号
 }
 
 // 场景同步消息
@@ -303,33 +307,44 @@ export class CollaborationService {
     public updateElement(elementId: string, updates: Partial<ExcalidrawElement>): void {
         if (!this.socket || !this.session) return;
 
+        // 确保更新包含必要的版本信息
+        const timestamp = Date.now();
+        const version = updates.version || 1;
+        const originalVersion = (updates as any).originalVersion;
+
         // 构建包含必要信息的消息
         const message = {
             roomId: this.session.roomId,
             userId: this.session.userId,
             elementId,
             updates,
-            timestamp: Date.now()
+            timestamp,
+            version,
+            originalVersion
         };
-
-        // 发送到服务器
-        this.socket.emit(CollaborationEvent.UPDATE_ELEMENT, message);
+        let socket = this.socket;
+        setTimeout(() => {
+            socket.emit(CollaborationEvent.UPDATE_ELEMENT, message);
+        }, 3000);
+        // this.socket.emit(CollaborationEvent.UPDATE_ELEMENT, message);
     }
 
-    // 添加元素
     public addElement(element: ExcalidrawElement): void {
         if (!this.socket || !this.session) {
             return;
         }
 
+        const timestamp = Date.now();
+        const version = element.version || 1;
+
         const message = {
             roomId: this.session.roomId,
             userId: this.session.userId,
             element,
-            timestamp: Date.now() // 添加时间戳确保操作顺序
+            timestamp,
+            version
         };
 
-        // 发送到服务器
         this.socket.emit(CollaborationEvent.ADD_ELEMENT, message);
     }
 
@@ -345,10 +360,6 @@ export class CollaborationService {
             timestamp: Date.now()
         };
 
-        // 记录删除操作
-        console.log('发送元素删除:', { elementId });
-
-        // 发送到服务器
         this.socket.emit(CollaborationEvent.DELETE_ELEMENT, message);
     }
 
