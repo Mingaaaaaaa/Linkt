@@ -1,5 +1,5 @@
 import rough from "roughjs";
-import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement } from "./types";
+import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement, ExcalidrawFreeDrawElement } from "./types";
 
 // 定义拉伸点的位置
 export enum ResizeHandle {
@@ -141,6 +141,13 @@ export class Renderer {
                 });
                 break;
             }
+            case 'freeDraw':
+                this.renderFreeDrawElement(
+                    this.ctx,
+                    element as ExcalidrawFreeDrawElement,
+                    appState
+                );
+                break;
         }
 
         // 如果元素被选中，绘制选中框和拉伸点
@@ -186,7 +193,7 @@ export class Renderer {
         appState: AppState
     ) {
         this.ctx.strokeStyle = "blue";
-        this.ctx.lineWidth = 1 / appState.zoom.value;
+        this.ctx.lineWidth = 1 / appState?.zoom?.value || 1;
 
         if (element.type === "line" || element.type === "arrow") {
             // 对于线条和箭头，不绘制选中框，只绘制拉伸点
@@ -296,4 +303,65 @@ export class Renderer {
 
         return null;
     }
-} 
+
+    private renderFreeDrawElement(
+        context: CanvasRenderingContext2D,
+        element: ExcalidrawFreeDrawElement,
+        appState: AppState
+    ) {
+        const { points, strokeColor, strokeWidth } = element;
+
+        if (!points || points.length < 2) return;
+
+        // 保存当前上下文
+        context.save();
+
+        // 设置绘制样式
+        context.strokeStyle = strokeColor;
+        context.lineWidth = strokeWidth;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+
+        // 开始绘制路径
+        context.beginPath();
+        context.moveTo(points[0][0], points[0][1]);
+
+        // 使用曲线平滑连接点
+        for (let i = 1; i < points.length; i++) {
+            // 对于少量点直接连接
+            if (points.length < 3) {
+                context.lineTo(points[i][0], points[i][1]);
+            } else {
+                // 对于更多点，使用二次贝塞尔曲线平滑连接
+                const currentPoint = points[i];
+
+                if (i < points.length - 1) {
+                    const nextPoint = points[i + 1];
+                    // 计算中点作为终点
+                    const midPointX = (currentPoint[0] + nextPoint[0]) / 2;
+                    const midPointY = (currentPoint[1] + nextPoint[1]) / 2;
+
+                    // 使用当前点作为控制点，中点作为终点
+                    context.quadraticCurveTo(
+                        currentPoint[0], currentPoint[1], // 控制点
+                        midPointX, midPointY             // 终点
+                    );
+                } else {
+                    // 最后一个点直接连线
+                    context.lineTo(currentPoint[0], currentPoint[1]);
+                }
+            }
+        }
+
+        // 描边路径
+        context.stroke();
+
+        // 如果选中了元素，绘制选中框
+        if (appState.selectedElementIds && appState.selectedElementIds[element.id]) {
+            this.renderSelectionBorder(element as NonDeletedExcalidrawElement, appState);
+        }
+
+        // 恢复上下文
+        context.restore();
+    }
+}

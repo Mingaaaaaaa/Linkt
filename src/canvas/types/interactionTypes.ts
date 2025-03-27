@@ -1,4 +1,4 @@
-import { NonDeletedExcalidrawElement, ExcalidrawElement, ExcalidrawTextElement } from "../types";
+import { NonDeletedExcalidrawElement, ExcalidrawElement, ExcalidrawTextElement, ExcalidrawFreeDrawElement } from "../types";
 import { ResizeHandle } from "../Renderer";
 
 // 拖动状态类型
@@ -52,4 +52,11 @@ export interface TextEditingInfo {
     y: number;
     width: number;
     height: number;
+}
+
+export interface FreeDrawingState {
+    element: ExcalidrawFreeDrawElement;
+    lastPoint: [number, number];
+    lastTime: number;
+    points: Array<[number, number]>;
 }

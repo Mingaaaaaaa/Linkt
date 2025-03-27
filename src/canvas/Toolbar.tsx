@@ -4,6 +4,19 @@ import { useCanvasStore } from '../store';
 import { CollaborationButton } from './components/CollaborationButton';
 import { CollaborationSession } from '../services/CollaborationService';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
+import { Tooltip } from './components/Tooltip';
+import {
+  SelectionIcon,
+  RectangleIcon,
+  EllipseIcon,
+  LineIcon,
+  ArrowIcon,
+  TextIcon,
+  FreeDrawIcon,
+  HandIcon,
+  EraserIcon,
+  MenuIcon
+} from './components/Icons';
 
 interface ToolbarProps {
   onOpenCollaborationDialog?: () => void;
@@ -18,14 +31,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const setCurrentTool = useCanvasStore((state) => state.setCurrentTool);
 
   const tools = [
-    { name: 'selection', icon: '👆', title: '选择工具' },
-    { name: 'rectangle', icon: '⬛', title: '矩形工具' },
-    { name: 'ellipse', icon: '⭕', title: '椭圆工具' },
-    { name: 'line', icon: '📏', title: '线条工具' },
-    { name: 'arrow', icon: '➡️', title: '箭头工具' },
-    { name: 'text', icon: '📝', title: '文本工具' },
-    { name: 'hand', icon: '✋', title: '平移工具' },
-    { name: 'eraser', icon: '🧽', title: '橡皮擦' }
+    { name: 'hand', icon: HandIcon, title: '平移工具' },
+    { name: 'selection', icon: SelectionIcon, title: '选择工具' },
+    { name: 'rectangle', icon: RectangleIcon, title: '矩形工具' },
+    { name: 'ellipse', icon: EllipseIcon, title: '椭圆工具' },
+    { name: 'arrow', icon: ArrowIcon, title: '箭头工具' },
+    { name: 'line', icon: LineIcon, title: '线条工具' },
+    { name: 'text', icon: TextIcon, title: '文本工具' },
+    { name: 'freeDraw', icon: FreeDrawIcon, title: '自由绘制' },
+    { name: 'eraser', icon: EraserIcon, title: '橡皮擦' }
   ];
 
   const handleToolSelect = (toolName: string) => {
@@ -49,45 +63,60 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         pointerEvents: 'auto'
       }}
     >
-      <button
-        style={{
-          padding: '8px',
-          background: 'transparent',
-          cursor: 'pointer',
-          border: 'none'
-        }}
-      >
-        {'☰'}
-      </button>
-      <UndoRedoButtons className='undo-redo-buttons' />
+      <Tooltip text='菜单'>
+        <button
+          style={{
+            padding: '8px',
+            background: 'transparent',
+            cursor: 'pointer',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <MenuIcon size={20} />
+        </button>
+      </Tooltip>
+
       <div
         style={{
           display: 'flex',
           gap: '8px',
           border: '1px solid #ddd',
-          padding: '8px ',
-          borderRadius: '8px'
+          padding: '8px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)'
         }}
       >
-        {tools.map((tool) => (
-          <button
-            key={tool.name}
-            onClick={() => handleToolSelect(tool.name)}
-            title={tool.title}
-            style={{
-              padding: '8px',
-              background: currentTool === tool.name ? '#e0dfff' : 'transparent',
-              border:
-                currentTool === tool.name
-                  ? '1px solid #aaa'
-                  : '1px solid transparent',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {tool.icon}
-          </button>
-        ))}
+        <UndoRedoButtons className='undo-redo-buttons' />
+
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          const isSelected = currentTool === tool.name;
+
+          return (
+            <Tooltip key={tool.name} text={tool.title}>
+              <button
+                onClick={() => handleToolSelect(tool.name)}
+                style={{
+                  padding: '8px',
+                  background: isSelected ? '#e0dfff' : 'transparent',
+                  border: isSelected
+                    ? '1px solid #aaa'
+                    : '1px solid transparent',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Icon size={20} color={isSelected ? '#4040ff' : '#666'} />
+              </button>
+            </Tooltip>
+          );
+        })}
       </div>
 
       <CollaborationButton

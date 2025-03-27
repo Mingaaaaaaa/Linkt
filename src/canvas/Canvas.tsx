@@ -7,7 +7,6 @@ import {
   ExcalidrawElement
 } from './types';
 import { useCanvasStore } from '../store/';
-import { getScenePointerCoords } from './utils/coordinateUtils';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTextEditor } from './hooks/useTextEditor';
 import { useElementCreation } from './hooks/useElementCreation';
@@ -260,10 +259,10 @@ export const Canvas: React.FC<CanvasProps> = ({
   };
 
   const {
-    creatingElement,
-    setCreatingElement,
-    handleElementCreationStart,
-    handleElementCreationResize
+    freeDrawing,
+    startFreeDrawing,
+    updateFreeDrawing,
+    finishFreeDrawing
   } = useElementCreation(
     handleAddElementWithCollaboration,
     handleUpdateElementWithCollaboration,
@@ -667,7 +666,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       if (collaborationSession && collaborationSession.isConnected) {
         // 只有当有其他用户在房间时才进行同步
         if (collaborationSession.connectedUsers.length > 1) {
-          console.log('执行定期全量同步...');
           const elements = [...getElements()];
           const appState = {
             zoom: zoom,
@@ -855,6 +853,12 @@ export const Canvas: React.FC<CanvasProps> = ({
       }, 100);
     }
 
+    // 处理自由绘制更新 - 提高优先级
+    if (freeDrawing && currentTool === 'freeDraw') {
+      updateFreeDrawing(sceneCoords);
+      return;
+    }
+
     if (panInfo) {
       handlePan(clientX, clientY, scrollX, scrollY);
       return;
@@ -873,10 +877,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     if (selectionBox) {
       updateSelectionBox(sceneCoords, selectionBox);
     }
-
-    if (creatingElement) {
-      handleElementCreationResize(sceneCoords, creatingElement);
-    }
   };
 
   // 组件卸载时断开连接
@@ -890,7 +890,6 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // 处理鼠标滚轮缩放
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    // Ignore zooming while editing text
     if (editingText) return;
 
     const isZooming = e.ctrlKey || e.metaKey;
@@ -1103,23 +1102,17 @@ export const Canvas: React.FC<CanvasProps> = ({
       case 'eraser':
         handleEraserMouseDown(sceneCoords);
         break;
+      case 'freeDraw':
+        startFreeDrawing(sceneCoords);
+        break;
       default:
         handleSelectionMouseDown(sceneCoords);
     }
   };
 
-  // 修改handleMouseUp函数，避免重复记录历史
   const handleMouseUp = () => {
     // 操作结束时，停止历史记录 - 现在stopRecordingHistory会自动记录最终状态
     stopRecordingHistory();
-
-    // 移除重复记录的代码
-    // 不再需要以下代码，因为stopRecordingHistory已经记录了最终状态
-    // setTimeout(() => {
-    //   const store = useCanvasStore.getState();
-    //   store.recordCurrentStateToHistory();
-    // }, 0);
-
     // 结束拉伸操作
     setResizeInfo(null);
     // 结束平移操作
@@ -1149,6 +1142,11 @@ export const Canvas: React.FC<CanvasProps> = ({
       setSelectedElementIds(selectedIds);
     }
     setSelectionBox(null);
+
+    // 结束自由绘制
+    if (freeDrawing) {
+      finishFreeDrawing();
+    }
   };
 
   // 处理选择工具的鼠标按下事件

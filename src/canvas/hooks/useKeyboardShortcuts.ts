@@ -80,7 +80,6 @@ export const useKeyboardShortcuts = ({
             if (e.key === 'Escape') {
                 if (!editingText && setCurrentTool && currentTool !== 'selection') {
                     setCurrentTool('selection');
-                    console.log('已切换到选择模式');
                 }
             }
         };

@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { ExcalidrawElement, PointerCoords } from "../types";
-import { CreatingElement } from "../types/interactionTypes";
+import { CreatingElement, FreeDrawingState } from "../types/interactionTypes";
 import {
     createRectangle,
     createEllipse,
     createLine,
     createArrow,
-    createText
+    createText,
+    createFreeDraw,
+    simplifyPath
 } from "../ElementUtils";
+
+
 
 export const useElementCreation = (
     addElement: (element: ExcalidrawElement) => void,
@@ -16,6 +20,7 @@ export const useElementCreation = (
     forceRender: () => void
 ) => {
     const [creatingElement, setCreatingElement] = useState<CreatingElement | null>(null);
+    const [freeDrawing, setFreeDrawing] = useState<FreeDrawingState | null>(null);
 
     // 处理开始创建元素
     const handleElementCreationStart = (
@@ -42,6 +47,9 @@ export const useElementCreation = (
             case 'text':
                 newElement = createText(sceneCoords.x, sceneCoords.y, 100, 50, { seed });
                 break;
+            case 'freeDraw':
+                startFreeDrawing(sceneCoords);
+                return;
             default:
                 return;
         }
@@ -104,10 +112,109 @@ export const useElementCreation = (
         forceRender();
     };
 
+    // 开始自由绘制
+    const startFreeDrawing = (sceneCoords: PointerCoords) => {
+        // 创建新的自由绘制元素
+        const element = createFreeDraw(sceneCoords.x, sceneCoords.y, {
+            strokeColor: '#000000',
+            strokeWidth: 2
+        });
+
+        // 初始化自由绘制状态
+        setFreeDrawing({
+            element,
+            lastPoint: [0, 0], // 相对于元素坐标的起始点
+            lastTime: Date.now(),
+            points: [[0, 0]] // 初始点
+        });
+
+        // 添加新元素
+        addElement(element);
+    };
+
+    // 更新自由绘制
+    const updateFreeDrawing = (sceneCoords: PointerCoords) => {
+        if (!freeDrawing) return;
+
+        const { element, points } = freeDrawing;
+
+        // 计算相对于元素坐标系的点
+        const x = sceneCoords.x - element.x;
+        const y = sceneCoords.y - element.y;
+
+        // 添加新点
+        const newPoints: [number, number][] = [...points, [x, y]];
+
+        // 计算元素的宽度和高度
+        let minX = Number.MAX_VALUE;
+        let minY = Number.MAX_VALUE;
+        let maxX = Number.MIN_VALUE;
+        let maxY = Number.MIN_VALUE;
+
+        for (const point of newPoints) {
+            minX = Math.min(minX, point[0]);
+            minY = Math.min(minY, point[1]);
+            maxX = Math.max(maxX, point[0]);
+            maxY = Math.max(maxY, point[1]);
+        }
+
+        // 如果有足够多的点，尝试简化路径
+        let pointsToUse = newPoints;
+        if (newPoints.length > 10) {
+            // pointsToUse = simplifyPath(newPoints, 0.5);
+        }
+
+        // 更新元素
+        const updatedElement = {
+            ...element,
+            points: pointsToUse,
+            width: Math.max(1, maxX - minX),
+            height: Math.max(1, maxY - minY)
+        };
+
+        // 更新状态
+        setFreeDrawing({
+            ...freeDrawing,
+            element: updatedElement,
+            lastPoint: [x, y],
+            lastTime: Date.now(),
+            points: pointsToUse
+        });
+
+        // 更新元素
+        updateElement(element.id, updatedElement);
+
+        // 触发重新渲染
+        forceRender();
+    };
+
+    // 结束自由绘制
+    const finishFreeDrawing = () => {
+        if (!freeDrawing) return;
+
+        // 最终简化路径点，提高性能
+        const finalPoints = simplifyPath(freeDrawing.points, 1);
+
+        // 更新元素的最终路径
+        updateElement(freeDrawing.element.id, {
+            points: finalPoints
+        });
+
+        // 重置状态
+        setFreeDrawing(null);
+
+        // 触发重新渲染
+        forceRender();
+    };
+
     return {
         creatingElement,
         setCreatingElement,
         handleElementCreationStart,
-        handleElementCreationResize
+        handleElementCreationResize,
+        freeDrawing,
+        startFreeDrawing,
+        updateFreeDrawing,
+        finishFreeDrawing
     };
 };

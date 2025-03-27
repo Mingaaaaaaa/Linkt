@@ -1,6 +1,6 @@
 export type ExcalidrawElement = {
     id: string;
-    type: "rectangle" | "ellipse" | "line" | "arrow" | "text";
+    type: "rectangle" | "ellipse" | "line" | "arrow" | "text" | "freeDraw";
     x: number;
     y: number;
     width: number;
@@ -21,6 +21,8 @@ export type ExcalidrawElement = {
     version?: number;
     lastModified?: number;
     originalVersion?: number; // 添加原始版本号，用于冲突检测
+    points?: Array<[number, number]>; // 路径点的数组 [x, y]
+    text?: string;
 };
 
 export type NonDeletedExcalidrawElement = ExcalidrawElement & {
@@ -54,6 +56,16 @@ export type ExcalidrawArrowElement = ExcalidrawElement & {
     type: "arrow";
 };
 
+export type ExcalidrawFreeDrawElement = ExcalidrawElement & {
+    type: "freeDraw";
+    points: Array<[number, number]>; // 路径点的数组 [x, y]
+    simulatePressure: boolean; // 是否模拟压力
+    strokeWidth: number;
+    roughness: number;
+    strokeColor: string;
+    backgroundColor?: string;
+};
+
 export type AppState = {
     viewBackgroundColor: string;
     zoom: {
@@ -82,8 +94,9 @@ export type ToolType =
     | "line"
     | "arrow"
     | "text"
-    | "eraser"
-    | "hand";
+    | "freeDraw"  // 添加自由绘制工具
+    | "hand"
+    | "eraser";
 
 export interface Device {
     isMobile: boolean;
@@ -114,3 +127,4 @@ export type SceneData = {
     appState: AppState;
     scrollToContent?: boolean;
 };
+
