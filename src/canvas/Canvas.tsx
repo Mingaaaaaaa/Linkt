@@ -89,6 +89,15 @@ export const Canvas: React.FC<CanvasProps> = ({
   // 获取元素数组，用于触发重新渲染
   const elements = useCanvasStore((state) => state.elements);
 
+  // 获取撤销和重做函数
+  const undo = useCanvasStore((state) => state.undo);
+  const redo = useCanvasStore((state) => state.redo);
+  const startRecordingHistory = useCanvasStore(
+    (state) => state.startRecordingHistory
+  );
+  const stopRecordingHistory = useCanvasStore(
+    (state) => state.stopRecordingHistory
+  );
   // 手动触发渲染函数
   const forceRender = () => {
     if (rendererRef.current) {
@@ -132,14 +141,26 @@ export const Canvas: React.FC<CanvasProps> = ({
       element.lastModified = Date.now();
     }
 
-    // 只有本地操作才需要发送到服务器
+    // 只有本地操作才需要记录历史和发送到服务器
     if (source === UPDATE_SOURCE.LOCAL) {
+      // 添加元素是离散操作，直接记录历史
       addElement(element);
       if (collaborationSession && collaborationSession.isConnected) {
         collaborationService.addElement(element);
       }
     } else {
-      addElement(element);
+      // 远程操作直接应用，不记录历史
+      const { scene } = useCanvasStore.getState();
+      const elementWithVersion = {
+        ...element,
+        version: element.version || 1,
+        lastModified: element.lastModified || Date.now()
+      };
+      scene.addElement(elementWithVersion);
+      useCanvasStore.setState({
+        scene: scene,
+        elements: [...scene.getElements()]
+      });
     }
   };
 
@@ -163,14 +184,25 @@ export const Canvas: React.FC<CanvasProps> = ({
       };
     }
 
-    // 只有本地操作才需要发送到服务器
+    // 只有本地操作才需要记录历史和发送到服务器
     if (source === UPDATE_SOURCE.LOCAL) {
       updateElement(elementId, updates);
       if (collaborationSession && collaborationSession.isConnected) {
         collaborationService.updateElement(elementId, updates);
       }
     } else {
-      updateElement(elementId, updates);
+      // 远程操作直接应用，不记录历史
+      const { scene } = useCanvasStore.getState();
+      const element = scene.getElementById(elementId);
+      if (element) {
+        scene.updateElement(elementId, { ...element, ...updates });
+      } else {
+        scene.updateElement(elementId, updates);
+      }
+      useCanvasStore.setState({
+        scene: scene,
+        elements: [...scene.getElements()]
+      });
     }
   };
 
@@ -178,17 +210,20 @@ export const Canvas: React.FC<CanvasProps> = ({
     elementId: string,
     source = UPDATE_SOURCE.LOCAL
   ) => {
-    // 只有本地操作才需要发送到服务器
+    // 只有本地操作才需要记录历史和发送到服务器
     if (source === UPDATE_SOURCE.LOCAL) {
-      // 首先应用本地删除
       deleteElement(elementId);
-
-      // 如果在协同会话中，发送元素删除消息
       if (collaborationSession && collaborationSession.isConnected) {
         collaborationService.deleteElement(elementId);
       }
     } else {
-      deleteElement(elementId);
+      // 远程操作直接应用，不记录历史
+      const { scene } = useCanvasStore.getState();
+      scene.deleteElement(elementId);
+      useCanvasStore.setState({
+        scene: scene,
+        elements: [...scene.getElements()]
+      });
     }
   };
 
@@ -250,7 +285,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     isSpacePressed,
     setIsSpacePressed,
     currentTool,
-    setCurrentTool
+    setCurrentTool,
+    undo,
+    redo
   });
 
   // 完善协同编辑事件监听
@@ -965,6 +1002,8 @@ export const Canvas: React.FC<CanvasProps> = ({
           originalMouseX: sceneCoords.x,
           originalMouseY: sceneCoords.y
         });
+        // 开始记录历史
+        startRecordingHistory();
         return;
       }
     }
@@ -991,6 +1030,8 @@ export const Canvas: React.FC<CanvasProps> = ({
           startY: sceneCoords.y,
           originalElements: selectedElementsArray.map((el) => ({ ...el }))
         });
+        // 开始记录历史
+        startRecordingHistory();
         return;
       }
 
@@ -1017,6 +1058,8 @@ export const Canvas: React.FC<CanvasProps> = ({
               startY: sceneCoords.y,
               originalElements: [{ ...element }]
             });
+            // 开始记录历史
+            startRecordingHistory();
             break;
           }
         }
@@ -1065,8 +1108,18 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  // 处理鼠标松开事件
+  // 修改handleMouseUp函数，避免重复记录历史
   const handleMouseUp = () => {
+    // 操作结束时，停止历史记录 - 现在stopRecordingHistory会自动记录最终状态
+    stopRecordingHistory();
+
+    // 移除重复记录的代码
+    // 不再需要以下代码，因为stopRecordingHistory已经记录了最终状态
+    // setTimeout(() => {
+    //   const store = useCanvasStore.getState();
+    //   store.recordCurrentStateToHistory();
+    // }, 0);
+
     // 结束拉伸操作
     setResizeInfo(null);
     // 结束平移操作

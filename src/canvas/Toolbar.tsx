@@ -3,6 +3,7 @@ import { ToolType } from './types';
 import { useCanvasStore } from '../store';
 import { CollaborationButton } from './components/CollaborationButton';
 import { CollaborationSession } from '../services/CollaborationService';
+import { UndoRedoButtons } from './components/UndoRedoButtons';
 
 interface ToolbarProps {
   onOpenCollaborationDialog?: () => void;
@@ -58,6 +59,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       >
         {'☰'}
       </button>
+      <UndoRedoButtons className='undo-redo-buttons' />
       <div
         style={{
           display: 'flex',

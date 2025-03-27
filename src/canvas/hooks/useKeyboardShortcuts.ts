@@ -10,6 +10,8 @@ interface KeyboardShortcutsProps {
     setIsSpacePressed: (pressed: boolean) => void;
     currentTool?: string;
     setCurrentTool?: (tool: ToolType) => void;
+    undo?: () => void;  // 添加撤销函数
+    redo?: () => void;  // 添加重做函数
 }
 
 export const useKeyboardShortcuts = ({
@@ -20,7 +22,9 @@ export const useKeyboardShortcuts = ({
     isSpacePressed,
     setIsSpacePressed,
     currentTool,
-    setCurrentTool
+    setCurrentTool,
+    undo,
+    redo
 }: KeyboardShortcutsProps) => {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -33,6 +37,21 @@ export const useKeyboardShortcuts = ({
             if (e.key === ' ' && !isSpacePressed) {
                 setIsSpacePressed(true);
                 e.preventDefault(); // 防止页面滚动
+            }
+
+            // 处理撤销操作 (Ctrl+Z / Command+Z)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && undo) {
+                e.preventDefault();
+                undo();
+                return;
+            }
+
+            // 处理重做操作 (Ctrl+Shift+Z / Command+Shift+Z 或 Ctrl+Y / Command+Y)
+            if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') ||
+                ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+                e.preventDefault();
+                if (redo) redo();
+                return;
             }
 
             // 如果按下 Delete 或 Backspace 键，且有选中的元素，则删除元素
@@ -88,6 +107,8 @@ export const useKeyboardShortcuts = ({
         isSpacePressed,
         setIsSpacePressed,
         currentTool,
-        setCurrentTool
+        setCurrentTool,
+        undo,
+        redo
     ]);
 };
