@@ -14,6 +14,7 @@ import { useElementInteraction } from './hooks/useElementInteraction';
 import { useCanvasGestures } from './hooks/useCanvasGestures';
 import { SelectionOverlay } from './components/SelectionOverlay';
 import { TextEditor } from './components/TextEditor';
+import { StylePanel } from './components/StylePanel/StylePanel';
 
 // 导入协同编辑相关组件和服务
 import { CollaborationDialog } from './components/CollaborationDialog';
@@ -288,6 +289,28 @@ export const Canvas: React.FC<CanvasProps> = ({
     undo,
     redo
   });
+
+  // 添加样式面板状态
+  const [showStylePanel, setShowStylePanel] = useState(false);
+
+  // 获取当前选中的元素
+  const selectedElements = getNonDeletedElements().filter(
+    (element) => selectedElementIds[element.id]
+  );
+
+  // 关闭样式面板
+  const handleCloseStylePanel = () => {
+    setShowStylePanel(false);
+  };
+
+  // 修改处理元素选择的逻辑，当元素被选中时显示样式面板
+  useEffect(() => {
+    if (Object.keys(selectedElementIds).length > 0) {
+      setShowStylePanel(true);
+    } else {
+      setShowStylePanel(false);
+    }
+  }, [selectedElementIds]);
 
   // 完善协同编辑事件监听
   useEffect(() => {
@@ -1332,6 +1355,14 @@ export const Canvas: React.FC<CanvasProps> = ({
           handleTextInputChange={handleTextInputChange}
           handleTextInputBlur={handleTextInputBlur}
           handleTextInputKeyDown={handleTextInputKeyDown}
+        />
+      )}
+
+      {/* 样式编辑面板 */}
+      {showStylePanel && selectedElements.length > 0 && (
+        <StylePanel
+          selectedElements={selectedElements}
+          onClose={handleCloseStylePanel}
         />
       )}
 

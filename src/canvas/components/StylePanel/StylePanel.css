@@ -1,0 +1,103 @@
+.style-panel {
+  animation: slideIn 0.3s ease-out;
+}
+
+.style-panel-section {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.style-panel-section:last-child {
+  border-bottom: none;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 自定义滑块样式 */
+input[type='range'] {
+  -webkit-appearance: none;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  margin: 10px 0;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4285f4;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4285f4;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* 颜色选择器样式 */
+input[type='color'] {
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* 按钮悬停效果 */
+button:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 下拉菜单样式 */
+select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="6" viewBox="0 0 12 6"><path fill="%23666" d="M0 0l6 6 6-6z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 8px;
+}
+
+/* 统一的按钮样式 */
+.style-button {
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.style-button-selected {
+  background-color: rgb(224, 223, 255) !important;
+  border: 2px solid rgb(190, 189, 255) !important;
+}
+
+.style-button-unselected {
+  background-color: #f5f5f5;
+  border: 1px solid #e6e6e6;
+}
+
+.style-button:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: rgb(240, 240, 255);
+}
