@@ -8,7 +8,7 @@ interface IconProps {
 }
 
 export const StrokeSmoothIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -25,18 +25,18 @@ export const StrokeSmoothIcon: React.FC<IconProps> = ({
     color={color}
     fill='none'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <path
       d='M2.5 12.038c1.655-.885 5.9-3.292 8.568-4.354 2.668-1.063.101 2.821 1.32 3.104 1.218.283 5.112-1.814 5.112-1.814'
-      stroke-width='1.25'
+      strokeWidth='1.25'
     ></path>
   </svg>
 );
 
 export const StrokeNormalIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -53,18 +53,18 @@ export const StrokeNormalIcon: React.FC<IconProps> = ({
     viewBox='0 0 20 20'
     fill='none'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <path
       d='M2.5 12.563c1.655-.886 5.9-3.293 8.568-4.355 2.668-1.062.101 2.822 1.32 3.105 1.218.283 5.112-1.814 5.112-1.814m-13.469 2.23c2.963-1.586 6.13-5.62 7.468-4.998 1.338.623-1.153 4.11-.132 5.595 1.02 1.487 6.133-1.43 6.133-1.43'
-      stroke-width='1.25'
+      strokeWidth='1.25'
     ></path>
   </svg>
 );
 
 export const StrokeRoughIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -80,18 +80,18 @@ export const StrokeRoughIcon: React.FC<IconProps> = ({
     width={size}
     fill='none'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <path
       d='M2.5 11.936c1.737-.879 8.627-5.346 10.42-5.268 1.795.078-.418 5.138.345 5.736.763.598 3.53-1.789 4.235-2.147M2.929 9.788c1.164-.519 5.47-3.28 6.987-3.114 1.519.165 1 3.827 2.121 4.109 1.122.281 3.839-2.016 4.606-2.42'
-      stroke-width='1.25'
+      strokeWidth='1.25'
     ></path>
   </svg>
 );
 
 export const SingleLineFillIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -107,13 +107,13 @@ export const SingleLineFillIcon: React.FC<IconProps> = ({
     width={size}
     fill='none'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <path
       d='M5.879 2.625h8.242a3.254 3.254 0 0 1 3.254 3.254v8.242a3.254 3.254 0 0 1-3.254 3.254H5.88a3.254 3.254 0 0 1-3.254-3.254V5.88a3.254 3.254 0 0 1 3.254-3.254Z'
       stroke='currentColor'
-      stroke-width='1.25'
+      strokeWidth='1.25'
     ></path>
     <mask
       id='FillHachureIcon'
@@ -128,23 +128,23 @@ export const SingleLineFillIcon: React.FC<IconProps> = ({
         d='M5.879 2.625h8.242a3.254 3.254 0 0 1 3.254 3.254v8.242a3.254 3.254 0 0 1-3.254 3.254H5.88a3.254 3.254 0 0 1-3.254-3.254V5.88a3.254 3.254 0 0 1 3.254-3.254Z'
         fill='currentColor'
         stroke='currentColor'
-        stroke-width='1.25'
+        strokeWidth='1.25'
       ></path>
     </mask>
     <g mask='url(#FillHachureIcon)'>
       <path
         d='M2.258 15.156 15.156 2.258M7.324 20.222 20.222 7.325m-20.444 5.35L12.675-.222m-8.157 18.34L17.416 5.22'
         stroke='currentColor'
-        stroke-width='1.25'
-        stroke-linecap='round'
-        stroke-linejoin='round'
+        strokeWidth='1.25'
+        strokeLinecap='round'
+        strokeLinejoin='round'
       ></path>
     </g>
   </svg>
 );
 
 export const GridFillIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -160,14 +160,14 @@ export const GridFillIcon: React.FC<IconProps> = ({
     width={size}
     fill='none'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <g clip-path='url(#a)'>
       <path
         d='M5.879 2.625h8.242a3.254 3.254 0 0 1 3.254 3.254v8.242a3.254 3.254 0 0 1-3.254 3.254H5.88a3.254 3.254 0 0 1-3.254-3.254V5.88a3.254 3.254 0 0 1 3.254-3.254Z'
         stroke='currentColor'
-        stroke-width='1.25'
+        strokeWidth='1.25'
       ></path>
       <mask
         id='FillCrossHatchIcon'
@@ -181,9 +181,9 @@ export const GridFillIcon: React.FC<IconProps> = ({
         <path
           d='M2.426 15.044 15.044 2.426M7.383 20 20 7.383M0 12.617 12.617 0m-7.98 17.941L17.256 5.324m-2.211 12.25L2.426 4.956M20 12.617 7.383 0m5.234 20L0 7.383m17.941 7.98L5.324 2.745'
           stroke='currentColor'
-          stroke-width='1.25'
-          stroke-linecap='round'
-          stroke-linejoin='round'
+          strokeWidth='1.25'
+          strokeLinecap='round'
+          strokeLinejoin='round'
         ></path>
       </mask>
       <g mask='url(#FillCrossHatchIcon)'>
@@ -202,7 +202,7 @@ export const GridFillIcon: React.FC<IconProps> = ({
 );
 
 export const SolidFillIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -219,14 +219,14 @@ export const SolidFillIcon: React.FC<IconProps> = ({
     height={size}
     fill='currentColor'
     stroke='currentColor'
-    stroke-linecap='round'
-    stroke-linejoin='round'
+    strokeLinecap='round'
+    strokeLinejoin='round'
   >
     <g clip-path='url(#a)'>
       <path
         d='M4.91 2.625h10.18a2.284 2.284 0 0 1 2.285 2.284v10.182a2.284 2.284 0 0 1-2.284 2.284H4.909a2.284 2.284 0 0 1-2.284-2.284V4.909a2.284 2.284 0 0 1 2.284-2.284Z'
         stroke='currentColor'
-        stroke-width='1.25'
+        strokeWidth='1.25'
       ></path>
     </g>
     <defs>
@@ -238,7 +238,7 @@ export const SolidFillIcon: React.FC<IconProps> = ({
 );
 
 export const ArrowIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -272,7 +272,7 @@ export const ArrowIcon: React.FC<IconProps> = ({
 );
 
 export const TextIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -309,7 +309,7 @@ export const TextIcon: React.FC<IconProps> = ({
 );
 
 export const FreeDrawIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -324,9 +324,9 @@ export const FreeDrawIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='2'>
+    <g strokeWidth='2'>
       <path
-        clip-rule='evenodd'
+        clipRule='evenodd'
         d='m7.643 15.69 7.774-7.773a2.357 2.357 0 1 0-3.334-3.334L4.31 12.357a3.333 3.333 0 0 0-.977 2.357v1.953h1.953c.884 0 1.732-.352 2.357-.977Z'
       ></path>
       <path d='m11.25 5.417 3.333 3.333'></path>
@@ -335,7 +335,7 @@ export const FreeDrawIcon: React.FC<IconProps> = ({
 );
 
 export const HandIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -350,7 +350,7 @@ export const HandIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='1.5'>
+    <g strokeWidth='1.5'>
       <path stroke='none' d='M0 0h24v24H0z' fill='none'></path>
       <path d='M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5'></path>
       <path d='M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5'></path>
@@ -361,7 +361,7 @@ export const HandIcon: React.FC<IconProps> = ({
 );
 
 export const EraserIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -376,7 +376,7 @@ export const EraserIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='2'>
+    <g strokeWidth='2'>
       <path stroke='none' d='M0 0h24v24H0z' fill='none'></path>
       <path d='M19 20h-10.5l-4.21 -4.3a1 1 0 0 1 0 -1.41l10 -10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3'></path>
       <path d='M18 13.3l-6.3 -6.3'></path>
@@ -385,7 +385,7 @@ export const EraserIcon: React.FC<IconProps> = ({
 );
 
 export const UndoIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style
@@ -447,7 +447,7 @@ export const RedoIcon: React.FC<IconProps> = ({
 );
 
 export const MenuIcon: React.FC<IconProps> = ({
-  size = 20,
+  size = 18,
   color = 'currentColor',
   className,
   style

@@ -26,8 +26,8 @@ export const SelectionIcon: React.FC<IconProps> = ({
     <g
       stroke='currentColor'
       strokeWidth={1.25}
-      stroke-linecap='round'
-      stroke-linejoin='round'
+      strokeLinecap='round'
+      strokeLinejoin='round'
     >
       <path stroke='none' d='M0 0h24v24H0z' fill='none'></path>
       <path d='M6 6l4.153 11.793a0.365 .365 0 0 0 .331 .207a0.366 .366 0 0 0 .332 -.207l2.184 -4.793l4.787 -1.994a0.355 .355 0 0 0 .213 -.323a0.355 .355 0 0 0 -.213 -.323l-11.787 -4.36z'></path>
@@ -208,9 +208,9 @@ export const FreeDrawIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='2'>
+    <g strokeWidth='2'>
       <path
-        clip-rule='evenodd'
+        clipRule='evenodd'
         d='m7.643 15.69 7.774-7.773a2.357 2.357 0 1 0-3.334-3.334L4.31 12.357a3.333 3.333 0 0 0-.977 2.357v1.953h1.953c.884 0 1.732-.352 2.357-.977Z'
       ></path>
       <path d='m11.25 5.417 3.333 3.333'></path>
@@ -234,7 +234,7 @@ export const HandIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='1.5'>
+    <g strokeWidth='1.5'>
       <path stroke='none' d='M0 0h24v24H0z' fill='none'></path>
       <path d='M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5'></path>
       <path d='M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5'></path>
@@ -260,7 +260,7 @@ export const EraserIcon: React.FC<IconProps> = ({
     style={style}
     xmlns='http://www.w3.org/2000/svg'
   >
-    <g stroke-width='2'>
+    <g strokeWidth='2'>
       <path stroke='none' d='M0 0h24v24H0z' fill='none'></path>
       <path d='M19 20h-10.5l-4.21 -4.3a1 1 0 0 1 0 -1.41l10 -10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3'></path>
       <path d='M18 13.3l-6.3 -6.3'></path>

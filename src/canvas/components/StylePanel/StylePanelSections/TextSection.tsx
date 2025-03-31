@@ -4,12 +4,18 @@ interface TextSectionProps {
   fontSize?: number;
   fontFamily?: string;
   textAlign?: string;
+  onFontSizeChange?: (size: number) => void;
+  onFontFamilyChange?: (family: string) => void;
+  onTextAlignChange?: (align: string) => void;
 }
 
 export const TextSection: React.FC<TextSectionProps> = ({
   fontSize = 20,
   fontFamily = 'sans-serif',
-  textAlign = 'left'
+  textAlign = 'left',
+  onFontSizeChange,
+  onFontFamilyChange,
+  onTextAlignChange
 }) => {
   const fontSizeOptions = [14, 16, 20, 24, 28, 36];
   const fontFamilyOptions = [
@@ -40,6 +46,7 @@ export const TextSection: React.FC<TextSectionProps> = ({
           {fontSizeOptions.map((size) => (
             <button
               key={size}
+              onClick={() => onFontSizeChange?.(size)}
               className={`style-button ${
                 fontSize === size
                   ? 'style-button-selected'
@@ -65,6 +72,7 @@ export const TextSection: React.FC<TextSectionProps> = ({
         </label>
         <select
           value={fontFamily}
+          onChange={(e) => onFontFamilyChange?.(e.target.value)}
           style={{
             width: '100%',
             padding: '6px 8px',
@@ -94,6 +102,7 @@ export const TextSection: React.FC<TextSectionProps> = ({
           {textAlignOptions.map((option) => (
             <button
               key={option.value}
+              onClick={() => onTextAlignChange?.(option.value)}
               className={`style-button ${
                 textAlign === option.value
                   ? 'style-button-selected'

@@ -80,6 +80,9 @@ export class Renderer {
         this.ctx.rotate(element.angle);
         this.ctx.translate(-element.width / 2, -element.height / 2);
 
+        // 设置元素的透明度
+        this.ctx.globalAlpha = (element.opacity !== undefined ? element.opacity : 100) / 100;
+
         const isSelected = appState.selectedElementIds[element.id];
         const options = {
             stroke: element.strokeColor,
@@ -152,6 +155,8 @@ export class Renderer {
 
         // 如果元素被选中，绘制选中框和拉伸点
         if (isSelected) {
+            // 重置透明度，确保选择框和控制点不受透明度影响
+            this.ctx.globalAlpha = 1;
             this.renderSelectionBorder(element, appState);
             this.renderResizeHandles(element, appState);
         }
@@ -316,6 +321,9 @@ export class Renderer {
         // 保存当前上下文
         context.save();
 
+        // 设置元素的透明度
+        context.globalAlpha = (element.opacity !== undefined ? element.opacity : 100) / 100;
+
         // 设置绘制样式
         context.strokeStyle = strokeColor;
         context.lineWidth = strokeWidth;
@@ -358,6 +366,8 @@ export class Renderer {
 
         // 如果选中了元素，绘制选中框
         if (appState.selectedElementIds && appState.selectedElementIds[element.id]) {
+            // 重置透明度，确保选择框不受透明度影响
+            context.globalAlpha = 1;
             this.renderSelectionBorder(element as NonDeletedExcalidrawElement, appState);
         }
 

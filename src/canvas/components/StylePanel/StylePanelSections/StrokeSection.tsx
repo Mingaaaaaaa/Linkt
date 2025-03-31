@@ -12,14 +12,20 @@ interface StrokeSectionProps {
   strokeWidth?: number;
   fillStyle?: string;
   roughness?: number;
+  onStrokeWidthChange?: (width: number) => void;
+  onFillStyleChange?: (style: string) => void;
+  onRoughnessChange?: (roughness: number) => void;
 }
 
 export const StrokeSection: React.FC<StrokeSectionProps> = ({
   strokeWidth = 1,
   fillStyle = 'solid',
-  roughness = 1
+  roughness = 1,
+  onStrokeWidthChange,
+  onFillStyleChange,
+  onRoughnessChange
 }) => {
-  const strokeWidthOptions = [1, 2, 4, 8];
+  const strokeWidthOptions = [1, 2, 4];
   const fillStyleOptions = [
     { value: 'solid', label: '实心', icon: SolidFillIcon },
     { value: 'hachure', label: '平行线', icon: SingleLineFillIcon },
@@ -35,24 +41,27 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
     <div className='style-panel-section'>
       <div style={{ marginBottom: '12px' }}>
         <label
-          style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}
+          style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}
         >
           填充样式:
         </label>
         <div
           className='fill-style-options'
-          style={{ display: 'flex', gap: '4px' }}
+          style={{ display: 'flex', gap: '8px' }}
         >
           {fillStyleOptions.map((option) => {
             const Icon = option.icon;
             return (
               <button
                 key={option.value}
+                onClick={() => onFillStyleChange?.(option.value)}
                 className={`style-button ${
                   fillStyle === option.value
                     ? 'style-button-selected'
                     : 'style-button-unselected'
                 }`}
+                title={option.label}
+                style={{ padding: '8px' }}
               >
                 <Icon />
               </button>
@@ -63,7 +72,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
       <div style={{ marginBottom: '12px' }}>
         <label
-          style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}
+          style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}
         >
           描边宽度:
         </label>
@@ -74,18 +83,19 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
           {strokeWidthOptions.map((width) => (
             <button
               key={width}
+              onClick={() => onStrokeWidthChange?.(width)}
               className={`style-button ${
                 strokeWidth === width
                   ? 'style-button-selected'
                   : 'style-button-unselected'
               }`}
               style={{
-                width: '32px',
-                height: '30px',
+                width: '36px',
+                height: '41px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: 0
+                padding: '8px'
               }}
             >
               <div
@@ -103,7 +113,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
       <div>
         <label
-          style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}
+          style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}
         >
           线条风格:
         </label>
@@ -116,11 +126,14 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             return (
               <button
                 key={option.value}
+                onClick={() => onRoughnessChange?.(option.value)}
                 className={`style-button ${
                   roughness === option.value
                     ? 'style-button-selected'
                     : 'style-button-unselected'
                 }`}
+                title={option.label}
+                style={{ padding: '8px' }}
               >
                 <Icon />
               </button>

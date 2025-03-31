@@ -1363,6 +1363,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         <StylePanel
           selectedElements={selectedElements}
           onClose={handleCloseStylePanel}
+          updateElement={handleUpdateElementWithCollaboration}
+          startRecordingHistory={startRecordingHistory}
+          stopRecordingHistory={stopRecordingHistory}
         />
       )}
 

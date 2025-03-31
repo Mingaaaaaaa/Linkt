@@ -1,6 +1,12 @@
 import React from 'react';
 
-export const AlignmentSection: React.FC = () => {
+interface AlignmentSectionProps {
+  onAlignmentChange?: (alignType: string) => void;
+}
+
+export const AlignmentSection: React.FC<AlignmentSectionProps> = ({
+  onAlignmentChange
+}) => {
   const alignmentOptions = [
     { value: 'left', icon: '⫪', title: '左对齐' },
     { value: 'center-horizontal', icon: '⟷', title: '水平居中' },
@@ -26,6 +32,7 @@ export const AlignmentSection: React.FC = () => {
           <button
             key={option.value}
             title={option.title}
+            onClick={() => onAlignmentChange?.(option.value)}
             className='style-button style-button-unselected'
             style={{
               padding: '6px 0',
