@@ -42,6 +42,15 @@ interface CanvasStore extends AppState {
     // 获取元素
     getElements: () => readonly ExcalidrawElement[]
     getNonDeletedElements: () => readonly NonDeletedExcalidrawElement[]
+
+    // 设置网格显示
+    setShowGrid: (showGrid: boolean) => void
+
+    // 添加比例尺相关状态
+    showRulers: boolean;
+    rulerUnit: 'px' | 'cm' | 'mm' | 'in';
+    toggleRulers: () => void;
+    setRulerUnit: (unit: 'px' | 'cm' | 'mm' | 'in') => void;
 }
 
 // 创建一个新的 Scene 实例
@@ -68,7 +77,7 @@ export const useCanvasStore = create<CanvasStore>()(
     persist(
         (set, get) => ({
             // 基本状态
-            viewBackgroundColor: '#ffffff',
+            viewBackgroundColor: '#f8f9fa', // 改为浅灰色背景
             zoom: { value: 1 },
             offsetLeft: 0,
             offsetTop: 0,
@@ -77,13 +86,13 @@ export const useCanvasStore = create<CanvasStore>()(
             selectedElementIds: {},
             scrollX: 0,
             scrollY: 0,
-            currentTool: 'selection',
+            currentTool: 'line', // 默认使用直线工具
             editingElement: null,
             penMode: false,
             penDetected: false,
             exportBackground: true,
             gridSize: 20,
-            showGrid: false,
+            showGrid: true, // 默认显示网格
 
             // 场景和元素
             scene: initialScene,
@@ -304,7 +313,19 @@ export const useCanvasStore = create<CanvasStore>()(
             getNonDeletedElements: () => {
                 const { scene } = get()
                 return scene.getNonDeletedElements()
-            }
+            },
+
+            // 设置网格显示
+            setShowGrid: (showGrid: boolean) =>
+                set({ showGrid }),
+
+            // 初始化比例尺相关状态
+            showRulers: true,
+            rulerUnit: 'px',
+
+            // 比例尺相关方法
+            toggleRulers: () => set(state => ({ showRulers: !state.showRulers })),
+            setRulerUnit: (unit) => set({ rulerUnit: unit })
         }),
         {
             name: 'canvas-storage', // 存储的键名
@@ -316,7 +337,8 @@ export const useCanvasStore = create<CanvasStore>()(
                 zoom: state.zoom,
                 currentTool: state.currentTool,
                 scrollX: state.scrollX,
-                scrollY: state.scrollY
+                scrollY: state.scrollY,
+                showGrid: state.showGrid, // 添加网格状态持久化
                 // 注意：不持久化历史栈，以避免存储过大
             })
         }

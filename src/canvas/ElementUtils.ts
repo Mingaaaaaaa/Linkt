@@ -27,7 +27,7 @@ export const createElement = (
         backgroundColor: "#ffffff",
         fillStyle: "solid",
         strokeWidth: 1,
-        roughness: 1,
+        roughness: 0,
         opacity: 100,
         ...options,
     };

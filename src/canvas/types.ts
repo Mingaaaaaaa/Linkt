@@ -83,8 +83,8 @@ export type AppState = {
     penMode?: boolean;
     penDetected?: boolean;
     exportBackground?: boolean;
-    gridSize?: number | null;
-    showGrid?: boolean;
+    gridSize: number; // 更改为必需属性
+    showGrid: boolean; // 更改为必需属性
 };
 
 export type ToolType =

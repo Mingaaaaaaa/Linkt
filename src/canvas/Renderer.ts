@@ -39,6 +39,11 @@ export class Renderer {
         // 绘制背景
         this.renderBackground(appState);
 
+        // 修改网格渲染条件判断，使用严格判断
+        if (appState.showGrid === true) {
+            this.renderGrid(appState);
+        }
+
         // 绘制元素
         elements.forEach((element) => {
             this.renderElement(element, appState);
@@ -55,6 +60,41 @@ export class Renderer {
             this.canvas.width / appState.zoom.value,
             this.canvas.height / appState.zoom.value
         );
+    }
+
+    // 添加网格渲染方法
+    private renderGrid(appState: AppState) {
+        const { gridSize, zoom, scrollX, scrollY } = appState;
+        const actualGridSize = gridSize || 20;
+
+        const gridColor = 'rgba(0, 0, 0, 0.1)';
+        this.ctx.save();
+        this.ctx.strokeStyle = gridColor;
+        this.ctx.lineWidth = 1 / zoom.value;
+
+        // 计算可见区域的网格线
+        const startX = Math.floor(-scrollX / zoom.value / actualGridSize) * actualGridSize;
+        const startY = Math.floor(-scrollY / zoom.value / actualGridSize) * actualGridSize;
+        const endX = startX + (this.canvas.width / zoom.value) + actualGridSize * 2;
+        const endY = startY + (this.canvas.height / zoom.value) + actualGridSize * 2;
+
+        // 绘制垂直线
+        for (let x = startX; x < endX; x += actualGridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, startY);
+            this.ctx.lineTo(x, endY);
+            this.ctx.stroke();
+        }
+
+        // 绘制水平线
+        for (let y = startY; y < endY; y += actualGridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX, y);
+            this.ctx.lineTo(endX, y);
+            this.ctx.stroke();
+        }
+
+        this.ctx.restore();
     }
 
     private getRoughGenerator(element: NonDeletedExcalidrawElement) {

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ToolType } from './types';
 import { useCanvasStore } from '../store';
 import { CollaborationButton } from './components/CollaborationButton';
 import { CollaborationSession } from '../services/CollaborationService';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
 import { Tooltip } from './components/Tooltip';
+import { MainMenu } from './components/MainMenu';
 import {
   SelectionIcon,
   RectangleIcon,
@@ -29,6 +30,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
   const currentTool = useCanvasStore((state) => state.currentTool);
   const setCurrentTool = useCanvasStore((state) => state.setCurrentTool);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // 添加网格和背景状态
+  const showGrid = useCanvasStore((state) => state.showGrid);
+  const setShowGrid = useCanvasStore((state) => state.setShowGrid);
+  const viewBackgroundColor = useCanvasStore(
+    (state) => state.viewBackgroundColor
+  );
+  const setViewBackgroundColor = useCanvasStore(
+    (state) => state.setViewBackgroundColor
+  );
 
   const tools = [
     { name: 'hand', icon: HandIcon, title: '平移工具' },
@@ -44,6 +57,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   const handleToolSelect = (toolName: string) => {
     setCurrentTool(toolName as ToolType);
+  };
+
+  const toggleMenu = () => {
+    setShowMenu(!showMenu);
+  };
+
+  const handleToggleGrid = () => {
+    setShowGrid(!showGrid);
+  };
+
+  const handleChangeBackgroundColor = (color: string) => {
+    setViewBackgroundColor(color);
   };
 
   return (
@@ -65,11 +90,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     >
       <Tooltip text='菜单'>
         <button
+          ref={menuButtonRef}
+          onClick={toggleMenu}
           style={{
             padding: '8px',
-            background: 'transparent',
+            background: showMenu ? '#e0dfff' : 'transparent',
             cursor: 'pointer',
-            border: 'none',
+            border: showMenu ? '1px solid rgb(190, 189, 255)' : 'none',
+            borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -78,6 +106,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <MenuIcon size={20} />
         </button>
       </Tooltip>
+
+      <MainMenu
+        isOpen={showMenu}
+        onClose={() => setShowMenu(false)}
+        anchorEl={menuButtonRef.current}
+        showGrid={showGrid}
+        onToggleGrid={handleToggleGrid}
+        viewBackgroundColor={viewBackgroundColor}
+        onChangeBackgroundColor={handleChangeBackgroundColor}
+      />
 
       <div
         style={{
@@ -103,7 +141,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   padding: '8px',
                   background: isSelected ? '#e0dfff' : 'transparent',
                   border: isSelected
-                    ? '1px solid #aaa'
+                    ? '1px solid rgb(190, 189, 255)'
                     : '1px solid transparent',
                   borderRadius: '4px',
                   cursor: 'pointer',

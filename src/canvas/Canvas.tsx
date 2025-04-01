@@ -33,6 +33,9 @@ import {
   createText
 } from './ElementUtils';
 
+// 添加比例尺相关组件
+import { ScaleRuler } from './components/ScaleRuler';
+
 interface CanvasProps {
   width: number;
   height: number;
@@ -98,6 +101,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   const stopRecordingHistory = useCanvasStore(
     (state) => state.stopRecordingHistory
   );
+
+  // 在相关状态导入处添加 showGrid
+  const showGrid = useCanvasStore((state) => state.showGrid);
+
+  // 添加比例尺相关状态
+  const showRulers = useCanvasStore((state) => state.showRulers);
+  const rulerUnit = useCanvasStore((state) => state.rulerUnit);
+
   // 手动触发渲染函数
   const forceRender = () => {
     if (rendererRef.current) {
@@ -113,7 +124,11 @@ export const Canvas: React.FC<CanvasProps> = ({
           selectedElementIds,
           scrollX,
           scrollY,
-          currentTool
+          currentTool,
+          gridSize: 20,
+          showGrid, // 添加网格显示状态
+          showRulers,
+          rulerUnit
         };
         rendererRef.current.render(elements, appState);
       } catch (error) {
@@ -789,7 +804,11 @@ export const Canvas: React.FC<CanvasProps> = ({
           selectedElementIds,
           scrollX,
           scrollY,
-          currentTool
+          currentTool,
+          gridSize: 20, // 网格大小
+          showGrid, // 添加网格显示状态
+          showRulers,
+          rulerUnit
         };
         rendererRef.current.render(elements, appState);
       } catch (error) {
@@ -807,7 +826,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     scrollY,
     currentTool,
     elements,
-    editingText
+    editingText,
+    showGrid, // 添加到依赖数组中
+    showRulers,
+    rulerUnit
   ]);
 
   // 处理窗口大小变化
@@ -848,6 +870,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     collaborationService.leaveRoom();
     onCollaborationSessionChange(null);
   };
+ 
 
   // 修改 handleMouseMove 函数，确保光标位置实时更新
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1321,6 +1344,18 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   return (
     <div style={{ position: 'relative', width, height }}>
+      {/* 比例尺组件 */}
+      {showRulers && (
+        <ScaleRuler
+          width={width}
+          height={height}
+          zoom={zoom.value}
+          scrollX={scrollX}
+          scrollY={scrollY}
+          unit={rulerUnit}
+        />
+      )}
+
       <canvas
         ref={canvasRef}
         width={width}
