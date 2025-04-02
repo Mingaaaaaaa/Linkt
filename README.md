@@ -1,9 +1,7 @@
----
 
-# **Linkt**  
+#  *Linkt*  
 **Transform Links into Dynamic Diagrams with AI & Collaboration**  
 
----
 
 ### ✨ **Core Innovations**  
 
