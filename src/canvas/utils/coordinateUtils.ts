@@ -6,7 +6,7 @@ import { PointerCoords } from "../types";
 export const getScenePointerCoords = (
     clientX: number,
     clientY: number,
-    canvasRef: React.RefObject<HTMLCanvasElement>,
+    canvasRef: React.RefObject<HTMLCanvasElement | null>,
     scrollX: number,
     scrollY: number,
     zoom: number

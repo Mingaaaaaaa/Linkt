@@ -1,30 +1,37 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Renderer } from './Renderer';
+import { useCanvasStore } from '../store/';
 import {
   PointerCoords,
+  ExcalidrawElement,
   ExcalidrawTextElement,
-  NonDeletedExcalidrawElement,
-  ExcalidrawElement
+  NonDeletedExcalidrawElement
 } from './types';
-import { useCanvasStore } from '../store/';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useTextEditor } from './hooks/useTextEditor';
-import { useElementCreation } from './hooks/useElementCreation';
-import { useElementInteraction } from './hooks/useElementInteraction';
-import { useCanvasGestures } from './hooks/useCanvasGestures';
-import { SelectionOverlay } from './components/SelectionOverlay';
-import { TextEditor } from './components/TextEditor';
-import { StylePanel } from './components/StylePanel/StylePanel';
 
-// 导入协同编辑相关组件和服务
-import { CollaborationDialog } from './components/CollaborationDialog';
-import { CollaborationStatusBar } from './components/CollaborationStatusBar';
-import { CollaborationCursors } from './components/CollaborationCursors';
+import {
+  useKeyboardShortcuts,
+  useTextEditor,
+  useElementCreation,
+  useElementInteraction,
+  useCanvasGestures
+} from './hooks';
+
+import {
+  SelectionOverlay,
+  TextEditor,
+  StylePanel,
+  ScaleRuler,
+  CollaborationDialog,
+  CollaborationCursors,
+  CollaborationStatusBar
+} from './components';
+
 import {
   collaborationService,
   CollaborationEvent,
   CollaborationSession
 } from '../services/CollaborationService';
+
 import {
   createArrow,
   createEllipse,
@@ -33,8 +40,7 @@ import {
   createText
 } from './ElementUtils';
 
-// 添加比例尺相关组件
-import { ScaleRuler } from './components/ScaleRuler';
+import { getScenePointerCoords } from './utils/coordinateUtils';
 
 interface CanvasProps {
   width: number;
@@ -89,7 +95,6 @@ export const Canvas: React.FC<CanvasProps> = ({
   );
   const getElements = useCanvasStore((state) => state.getElements);
   const appstate = useCanvasStore((state) => state);
-  // 获取元素数组，用于触发重新渲染
   const elements = useCanvasStore((state) => state.elements);
 
   // 获取撤销和重做函数
@@ -242,7 +247,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  // 使用拆分出的hooks
   const {
     editingText,
     setEditingText,
@@ -302,7 +306,18 @@ export const Canvas: React.FC<CanvasProps> = ({
     currentTool,
     setCurrentTool,
     undo,
-    redo
+    redo,
+    getElements,
+    addElement,
+    getCanvasCoordinates: (clientX, clientY) =>
+      getScenePointerCoords(
+        clientX,
+        clientY,
+        canvasRef,
+        scrollX,
+        scrollY,
+        zoom.value
+      )
   });
 
   // 添加样式面板状态
@@ -870,14 +885,20 @@ export const Canvas: React.FC<CanvasProps> = ({
     collaborationService.leaveRoom();
     onCollaborationSessionChange(null);
   };
- 
 
   // 修改 handleMouseMove 函数，确保光标位置实时更新
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (editingText) return;
 
     const { clientX, clientY } = e;
-    const sceneCoords = getScenePointerCoords(clientX, clientY);
+    const sceneCoords = getScenePointerCoords(
+      clientX,
+      clientY,
+      canvasRef,
+      scrollX,
+      scrollY,
+      zoom.value
+    );
 
     // 保存光标位置，用于协同编辑
     lastCursorPositionRef.current = sceneCoords;
@@ -979,22 +1000,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
-  // 获取场景坐标
-  const getScenePointerCoords = (
-    clientX: number,
-    clientY: number
-  ): PointerCoords => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return { x: 0, y: 0 };
-    }
-
-    return {
-      x: (clientX - rect.left - scrollX) / zoom.value,
-      y: (clientY - rect.top - scrollY) / zoom.value
-    };
-  };
-
   // 处理鼠标按下事件
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 如果正在编辑文本，则不处理鼠标事件
@@ -1003,7 +1008,14 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
 
     const { clientX, clientY } = e;
-    const sceneCoords = getScenePointerCoords(clientX, clientY);
+    const sceneCoords = getScenePointerCoords(
+      clientX,
+      clientY,
+      canvasRef,
+      scrollX,
+      scrollY,
+      zoom.value
+    );
 
     // 如果是空格键按下、中键按下或者当前工具是手形工具，则开始平移
     if (
@@ -1302,7 +1314,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   // 处理双击事件，用于编辑文本
   const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { clientX, clientY } = e;
-    const sceneCoords = getScenePointerCoords(clientX, clientY);
+    const sceneCoords = getScenePointerCoords(
+      clientX,
+      clientY,
+      canvasRef,
+      scrollX,
+      scrollY,
+      zoom.value
+    );
 
     // 检查是否双击了文本元素
     const elements = getNonDeletedElements();
