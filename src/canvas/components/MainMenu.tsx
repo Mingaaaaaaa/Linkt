@@ -11,6 +11,7 @@ import {
   HelpIcon
 } from './MenuIcons.tsx';
 import { useCanvasStore } from '../../store';
+import { exportToPNG, exportToSVG } from '../utils/exportUtils';
 
 interface MainMenuProps {
   isOpen: boolean;
@@ -40,9 +41,64 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const setRulerUnit = useCanvasStore((state) => state.setRulerUnit);
   const zoom = useCanvasStore((state) => state.zoom);
 
+  // 添加获取元素和状态的函数
+  const getNonDeletedElements = useCanvasStore(
+    (state) => state.getNonDeletedElements
+  );
+  const selectedElementIds = useCanvasStore(
+    (state) => state.selectedElementIds
+  );
+  const scrollX = useCanvasStore((state) => state.scrollX);
+  const scrollY = useCanvasStore((state) => state.scrollY);
+
   // 添加本地状态以管理比例尺设置的展开状态
   const [isScaleSettingsExpanded, setIsScaleSettingsExpanded] =
     React.useState(false);
+
+  // 处理导出PNG
+  const handleExportToPNG = () => {
+    const elements = getNonDeletedElements();
+    const appState = {
+      viewBackgroundColor,
+      zoom,
+      selectedElementIds,
+      scrollX,
+      scrollY,
+      showGrid: false // 导出时不显示网格
+    };
+
+    exportToPNG({
+      elements,
+      appState,
+      exportBackground: true,
+      exportPadding: 10,
+      exportScale: 2 // 2倍缩放以获得更高质量
+    });
+
+    onClose(); // 关闭菜单
+  };
+
+  // 处理导出SVG
+  const handleExportToSVG = () => {
+    const elements = getNonDeletedElements();
+    const appState = {
+      viewBackgroundColor,
+      zoom,
+      selectedElementIds,
+      scrollX,
+      scrollY,
+      showGrid: false // 导出时不显示网格
+    };
+
+    exportToSVG({
+      elements,
+      appState,
+      exportBackground: true,
+      exportPadding: 10
+    });
+
+    onClose(); // 关闭菜单
+  };
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -342,13 +398,51 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               style={{
                 marginTop: '8px',
                 display: 'flex',
-                flexDirection: 'column',
+                flexDirection: 'row',
                 gap: '6px'
               }}
             >
-              <button className='sub-menu-button'>导出为PNG</button>
-              <button className='sub-menu-button'>导出为SVG</button>
-              <button className='sub-menu-button'>导出为PDF</button>
+              <button
+                className='sub-menu-button'
+                onClick={handleExportToPNG}
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  width: 'max-content',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#e9ecef')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                }
+              >
+                导出为PNG
+              </button>
+              <button
+                className='sub-menu-button'
+                onClick={handleExportToSVG}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  width: 'max-content',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#e9ecef')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                }
+              >
+                导出为SVG
+              </button>
             </div>
           </MenuItem>
         </div>

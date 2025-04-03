@@ -163,7 +163,7 @@ export const StylePanel: React.FC<StylePanelProps> = ({
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         padding: '16px',
-        zIndex: 1000,
+        zIndex: 10,
         overflow: 'auto',
         maxHeight: '80vh',
         display: 'flex',
