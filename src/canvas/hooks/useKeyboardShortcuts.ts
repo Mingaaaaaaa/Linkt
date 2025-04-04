@@ -116,40 +116,94 @@ export const useKeyboardShortcuts = ({
             // 粘贴功能 (Ctrl+V / Command+V)
             if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 e.preventDefault();
-                if (copiedElements.length > 0 && addElement && getCanvasCoordinates) {
-                    // 获取鼠标在画布上的坐标
-                    const { x: canvasX, y: canvasY } = getCanvasCoordinates(
-                        mousePositionRef.current.x,
-                        mousePositionRef.current.y
-                    );
 
-                    // 创建新选择集合，用于存储新元素的ID
-                    const newSelectedIds: Record<string, boolean> = {};
+                // 先检查剪贴板是否有图片数据
+                if (navigator.clipboard && navigator.clipboard.read) {
+                    navigator.clipboard.read()
+                        .then(clipboardItems => {
+                            // 处理所有clipboardItems
+                            const imagePromises = clipboardItems.map(item => {
+                                // 查找图片类型
+                                if (item.types.some(type => type.startsWith('image/'))) {
+                                    return item.getType('image/png')
+                                        .then(blob => {
+                                            // 读取blob数据
+                                            const reader = new FileReader();
+                                            return new Promise<string>((resolve) => {
+                                                reader.onload = () => {
+                                                    if (reader.result) {
+                                                        resolve(reader.result as string);
+                                                    }
+                                                };
+                                                reader.readAsDataURL(blob);
+                                            });
+                                        })
+                                        .catch(() => {
+                                            // 尝试JPEG格式
+                                            return item.getType('image/jpeg')
+                                                .then(blob => {
+                                                    const reader = new FileReader();
+                                                    return new Promise<string>((resolve) => {
+                                                        reader.onload = () => {
+                                                            if (reader.result) {
+                                                                resolve(reader.result as string);
+                                                            }
+                                                        };
+                                                        reader.readAsDataURL(blob);
+                                                    });
+                                                })
+                                                .catch(() => null);
+                                        });
+                                }
+                                return Promise.resolve(null);
+                            });
 
-                    // 为每个复制的元素创建新副本，放置在鼠标位置
-                    copiedElements.forEach(element => {
-                        const newId = createRandomId(); // 获取新ID的函数
-                        const newElement = {
-                            ...element,
-                            id: newId,
-                            x: canvasX + element._offsetX,
-                            y: canvasY + element._offsetY,
-                            // 重置版本信息
-                            version: 1,
-                            lastModified: Date.now()
-                        };
+                            // 处理所有Promise
+                            Promise.all(imagePromises)
+                                .then(results => {
+                                    // 筛选出有效的数据URL
+                                    const imageDataURL = results.find(result => result !== null);
 
-                        // 添加新元素到画布
-                        addElement(newElement);
+                                    if (imageDataURL) {
+                                        // 获取鼠标在画布上的坐标
+                                        let position;
+                                        if (getCanvasCoordinates) {
+                                            position = getCanvasCoordinates(
+                                                mousePositionRef.current.x,
+                                                mousePositionRef.current.y
+                                            );
+                                        }
 
-                        // 将新元素添加到选择集
-                        newSelectedIds[newId] = true;
-                    });
+                                        // 触发图片粘贴事件，并传递鼠标位置
+                                        const pasteEvent = new CustomEvent('image-paste', {
+                                            detail: {
+                                                dataURL: imageDataURL,
+                                                fileType: 'image/png',
+                                                fileName: `pasted-image-${new Date().toISOString().slice(0, 10)}`,
+                                                position: position // 添加位置信息
+                                            }
+                                        });
+                                        document.dispatchEvent(pasteEvent);
+                                        return; // 如果处理了图片，就不处理复制的元素
+                                    }
 
-                    // 更新选择状态为新添加的元素
-                    setSelectedElementIds(newSelectedIds);
-
-                    console.log('已粘贴元素到鼠标位置:', copiedElements.length);
+                                    // 如果没有图片，则处理复制的元素
+                                    pasteElements();
+                                })
+                                .catch(error => {
+                                    console.error('Error accessing clipboard:', error);
+                                    // 失败时退回到处理复制的元素
+                                    pasteElements();
+                                });
+                        })
+                        .catch(error => {
+                            console.error('Error reading clipboard:', error);
+                            // 如果读取失败，仍然粘贴已复制的元素
+                            pasteElements();
+                        });
+                } else {
+                    // 如果不支持clipboard API，直接粘贴已复制的元素
+                    pasteElements();
                 }
                 return;
             }
@@ -181,6 +235,43 @@ export const useKeyboardShortcuts = ({
                 if (!editingText && setCurrentTool && currentTool !== 'selection') {
                     setCurrentTool('selection');
                 }
+            }
+        };
+
+        // 粘贴元素的辅助函数
+        const pasteElements = () => {
+            if (copiedElements.length > 0 && addElement && getCanvasCoordinates) {
+                // 获取鼠标在画布上的坐标
+                const { x: canvasX, y: canvasY } = getCanvasCoordinates(
+                    mousePositionRef.current.x,
+                    mousePositionRef.current.y
+                );
+
+                // 创建新选择集合，用于存储新元素的ID
+                const newSelectedIds: Record<string, boolean> = {};
+
+                // 为每个复制的元素创建新副本，放置在鼠标位置
+                copiedElements.forEach(element => {
+                    const newId = createRandomId(); // 获取新ID的函数
+                    const newElement = {
+                        ...element,
+                        id: newId,
+                        x: canvasX + element._offsetX,
+                        y: canvasY + element._offsetY,
+                        // 重置版本信息
+                        version: 1,
+                        lastModified: Date.now()
+                    };
+
+                    // 添加新元素到画布
+                    addElement(newElement);
+
+                    // 将新元素添加到选择集
+                    newSelectedIds[newId] = true;
+                });
+
+                // 更新选择状态为新添加的元素
+                setSelectedElementIds(newSelectedIds);
             }
         };
 

@@ -1,6 +1,6 @@
 export type ExcalidrawElement = {
     id: string;
-    type: "rectangle" | "ellipse" | "line" | "arrow" | "text" | "freeDraw";
+    type: "rectangle" | "ellipse" | "line" | "arrow" | "text" | "freeDraw" | "image";
     x: number;
     y: number;
     width: number;
@@ -23,6 +23,10 @@ export type ExcalidrawElement = {
     originalVersion?: number; // 添加原始版本号，用于冲突检测
     points?: Array<[number, number]>; // 路径点的数组 [x, y]
     text?: string;
+    // 图片元素特有属性
+    dataURL?: string; // 图片数据URL
+    fileType?: string; // 图片文件类型（如image/png, image/jpeg等）
+    fileName?: string; // 图片文件名称
 };
 
 export type NonDeletedExcalidrawElement = ExcalidrawElement & {
@@ -66,6 +70,13 @@ export type ExcalidrawFreeDrawElement = ExcalidrawElement & {
     backgroundColor?: string;
 };
 
+export type ExcalidrawImageElement = ExcalidrawElement & {
+    type: "image";
+    dataURL: string;
+    fileType: string;
+    fileName?: string;
+};
+
 export type AppState = {
     viewBackgroundColor: string;
     zoom: {
@@ -96,7 +107,8 @@ export type ToolType =
     | "text"
     | "freeDraw"  // 添加自由绘制工具
     | "hand"
-    | "eraser";
+    | "eraser"
+    | "image";  // 添加图片工具
 
 export interface Device {
     isMobile: boolean;

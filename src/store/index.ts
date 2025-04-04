@@ -320,7 +320,7 @@ export const useCanvasStore = create<CanvasStore>()(
                 set({ showGrid }),
 
             // 初始化比例尺相关状态
-            showRulers: true,
+            showRulers: false,
             rulerUnit: 'px',
 
             // 比例尺相关方法

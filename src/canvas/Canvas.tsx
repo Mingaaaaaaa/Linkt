@@ -37,10 +37,12 @@ import {
   createEllipse,
   createLine,
   createRectangle,
-  createText
+  createText,
+  createImage
 } from './ElementUtils';
 
 import { getScenePointerCoords } from './utils/coordinateUtils';
+import { ContextMenu } from './components/ContextMenu';
 
 interface CanvasProps {
   width: number;
@@ -65,6 +67,17 @@ export const Canvas: React.FC<CanvasProps> = ({
   const rendererRef = useRef<Renderer | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+
+  // 添加上下文菜单状态
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    canvasCoords: { x: number; y: number };
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    canvasCoords: { x: 0, y: 0 }
+  });
 
   // 添加协同编辑相关状态
   const lastCursorPositionRef = useRef<PointerCoords | null>(null);
@@ -1361,8 +1374,229 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   };
 
+  // 处理右键点击事件
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault(); // 阻止默认右键菜单
+
+    // 获取鼠标在屏幕上的位置
+    const { clientX, clientY } = e;
+
+    // 获取鼠标在画布上的位置（考虑滚动和缩放）
+    const sceneCoords = getScenePointerCoords(
+      clientX,
+      clientY,
+      canvasRef,
+      scrollX,
+      scrollY,
+      zoom.value
+    );
+
+    // 打开上下文菜单
+    setContextMenu({
+      isOpen: true,
+      position: { x: clientX, y: clientY },
+      canvasCoords: { x: sceneCoords.x, y: sceneCoords.y }
+    });
+  };
+
+  // 关闭上下文菜单
+  const closeContextMenu = () => {
+    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  // 添加处理图片上传的副作用
+  useEffect(() => {
+    // 监听图片上传事件
+    const handleImageUpload = (event: CustomEvent) => {
+      if (event.detail && event.detail.dataURL) {
+        loadImageAndAddToCanvas(
+          event.detail.dataURL,
+          event.detail.fileType,
+          event.detail.fileName
+        );
+      }
+    };
+
+    // 监听图片粘贴事件（来自useKeyboardShortcuts的粘贴处理）
+    const handleImagePaste = (event: CustomEvent) => {
+      if (event.detail && event.detail.dataURL) {
+        loadImageAndAddToCanvas(
+          event.detail.dataURL,
+          event.detail.fileType,
+          event.detail.fileName,
+          event.detail.position
+        );
+      }
+    };
+
+    // 处理粘贴事件
+    const handlePaste = (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              if (e.target && e.target.result) {
+                // 使用当前鼠标位置，保证不为null
+                const position = lastCursorPositionRef.current
+                  ? {
+                      x: lastCursorPositionRef.current.x,
+                      y: lastCursorPositionRef.current.y
+                    }
+                  : undefined;
+
+                loadImageAndAddToCanvas(
+                  e.target.result as string,
+                  blob.type,
+                  `pasted-image-${new Date().toISOString().slice(0, 10)}`,
+                  position
+                );
+              }
+            };
+            reader.readAsDataURL(blob);
+            break;
+          }
+        }
+      }
+    };
+
+    // 加载图片并添加到画布
+    const loadImageAndAddToCanvas = (
+      dataURL: string,
+      fileType: string,
+      fileName: string,
+      position?: { x: number; y: number }
+    ) => {
+      // 创建图像对象以获取尺寸
+      const img = new Image();
+      img.src = dataURL;
+
+      img.onload = () => {
+        // 计算图像合适的尺寸
+        const maxWidth = width * 0.7; // 画布宽度的70%
+        const maxHeight = height * 0.7; // 画布高度的70%
+
+        let imgWidth = img.width;
+        let imgHeight = img.height;
+
+        // 如果图像太大，按比例缩小
+        if (imgWidth > maxWidth || imgHeight > maxHeight) {
+          const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+          imgWidth *= ratio;
+          imgHeight *= ratio;
+        }
+
+        // 确定图像放置位置
+        let x, y;
+
+        if (position) {
+          // 如果提供了特定位置，使用该位置
+          x = position.x;
+          y = position.y;
+        } else if (contextMenu.isOpen && contextMenu.canvasCoords) {
+          // 如果上下文菜单打开，使用其坐标
+          x = contextMenu.canvasCoords.x;
+          y = contextMenu.canvasCoords.y;
+        } else {
+          // 尝试使用最近的鼠标位置
+          const mousePos = lastCursorPositionRef.current;
+          if (mousePos) {
+            x = mousePos.x;
+            y = mousePos.y;
+          } else {
+            // 最后才回退到画布中心
+            x = width / 2 - imgWidth / 2 - scrollX / zoom.value;
+            y = height / 2 - imgHeight / 2 - scrollY / zoom.value;
+          }
+        }
+
+        // 创建新的图像元素
+        const imageElement = createImage(
+          x,
+          y,
+          imgWidth,
+          imgHeight,
+          dataURL,
+          fileType,
+          fileName
+        );
+
+        // 添加元素到画布
+        addElement(imageElement);
+
+        // 选中新添加的元素
+        setSelectedElementIds({ [imageElement.id]: true });
+      };
+
+      // 处理加载失败的情况
+      img.onerror = () => {
+        console.error('Failed to load image');
+        // 可以添加错误提示
+      };
+    };
+
+    // 注册事件监听器
+    document.addEventListener(
+      'image-upload',
+      handleImageUpload as EventListener
+    );
+    document.addEventListener('image-paste', handleImagePaste as EventListener);
+    document.addEventListener('paste', handlePaste);
+
+    // 清理函数
+    return () => {
+      document.removeEventListener(
+        'image-upload',
+        handleImageUpload as EventListener
+      );
+      document.removeEventListener(
+        'image-paste',
+        handleImagePaste as EventListener
+      );
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [
+    width,
+    height,
+    scrollX,
+    scrollY,
+    zoom.value,
+    addElement,
+    setSelectedElementIds
+  ]);
+
+  useEffect(() => {
+    // 添加重置拖拽状态的事件监听器
+    const handleResetDragState = () => {
+      setDragInfo(null);
+      setResizeInfo(null);
+      setPanInfo(null);
+      setSelectionBox(null);
+      stopRecordingHistory();
+    };
+
+    document.addEventListener('reset-drag-state', handleResetDragState);
+
+    return () => {
+      document.removeEventListener('reset-drag-state', handleResetDragState);
+    };
+  }, []);
+
   return (
-    <div style={{ position: 'relative', width, height }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        backgroundColor: viewBackgroundColor,
+        touchAction: 'none', // 阻止浏览器处理触摸事件
+      }}
+    >
       {/* 比例尺组件 */}
       {showRulers && (
         <ScaleRuler
@@ -1380,13 +1614,12 @@ export const Canvas: React.FC<CanvasProps> = ({
         width={width}
         height={height}
         style={{
-          border: '1px solid #ddd',
           cursor: getCursorStyle()
         }}
+        onContextMenu={handleContextMenu}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
       />
@@ -1449,6 +1682,14 @@ export const Canvas: React.FC<CanvasProps> = ({
           scrollY={scrollY}
         />
       )}
+
+      {/* 添加上下文菜单 */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        onClose={closeContextMenu}
+        position={contextMenu.position}
+        canvasCoords={contextMenu.canvasCoords}
+      />
     </div>
   );
 };

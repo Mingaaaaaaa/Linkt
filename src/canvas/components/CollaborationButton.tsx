@@ -16,6 +16,7 @@ export const CollaborationButton: React.FC<CollaborationButtonProps> = ({
       onClick={onOpenDialog}
       style={{
         padding: '8px 12px',
+        margin: ' 8px 30px',
         backgroundColor: collaborationSession ? '#4CAF50' : '#2196F3',
         color: 'white',
         border: 'none',

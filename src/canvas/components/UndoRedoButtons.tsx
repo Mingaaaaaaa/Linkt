@@ -44,7 +44,7 @@ export const UndoRedoButtons: React.FC<UndoRedoButtonsProps> = ({
             justifyContent: 'center'
           }}
         >
-          <UndoIcon size={12} color={isUndoDisabled ? '#999' : '#666'} />
+          <UndoIcon size={20} color={isUndoDisabled ? '#999' : '#666'} />
         </button>
       </Tooltip>
 
@@ -64,7 +64,7 @@ export const UndoRedoButtons: React.FC<UndoRedoButtonsProps> = ({
             justifyContent: 'center'
           }}
         >
-          <RedoIcon size={12} color={isRedoDisabled ? '#999' : '#666'} />
+          <RedoIcon size={20} color={isRedoDisabled ? '#999' : '#666'} />
         </button>
       </Tooltip>
     </div>

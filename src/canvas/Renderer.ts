@@ -1,5 +1,5 @@
 import rough from "roughjs";
-import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement, ExcalidrawFreeDrawElement } from "./types";
+import { NonDeletedExcalidrawElement, AppState, ExcalidrawTextElement, ExcalidrawFreeDrawElement, ExcalidrawImageElement } from "./types";
 
 // 定义拉伸点的位置
 export enum ResizeHandle {
@@ -189,6 +189,12 @@ export class Renderer {
                     this.ctx,
                     element as ExcalidrawFreeDrawElement,
                     appState
+                );
+                break;
+            case 'image':
+                this.renderImageElement(
+                    this.ctx,
+                    element as ExcalidrawImageElement
                 );
                 break;
         }
@@ -413,5 +419,50 @@ export class Renderer {
 
         // 恢复上下文
         context.restore();
+    }
+
+    private renderImageElement(
+        context: CanvasRenderingContext2D,
+        element: ExcalidrawImageElement,
+    ) {
+        // 检查是否有图像数据
+        if (!element.dataURL) return;
+
+        // 创建图像对象
+        const img = new Image();
+        img.src = element.dataURL;
+
+        // 检查图像是否已加载
+        if (img.complete) {
+            // 图像已加载，直接绘制
+            context.drawImage(img, 0, 0, element.width, element.height);
+        } else {
+            // 设置加载完成时的处理函数
+            img.onload = () => {
+                context.drawImage(img, 0, 0, element.width, element.height);
+                // 重新渲染整个画布以显示加载的图像
+                if (this.canvas) {
+                    const elements = Array.from(document.querySelectorAll('[data-excalidraw-element]'));
+                    if (elements.length > 0) {
+                        this.canvas.dispatchEvent(new Event('update'));
+                    }
+                }
+            };
+            // 加载失败时的处理
+            img.onerror = () => {
+                // 绘制错误提示框
+                context.fillStyle = '#f8d7da';
+                context.fillRect(0, 0, element.width, element.height);
+                context.strokeStyle = '#721c24';
+                context.strokeRect(0, 0, element.width, element.height);
+
+                // 添加错误文本
+                context.fillStyle = '#721c24';
+                context.font = '14px sans-serif';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText('图片加载失败', element.width / 2, element.height / 2);
+            };
+        }
     }
 }

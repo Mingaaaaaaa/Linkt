@@ -161,3 +161,27 @@ export const simplifyPath = (
 
     return result;
 };
+
+export const createImage = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    dataURL: string,
+    fileType: string,
+    fileName?: string,
+    options: Partial<ExcalidrawElement> = {}
+): ExcalidrawElement => {
+    return createElement(
+        "image",
+        x, y, width, height,
+        {
+            ...options,
+            dataURL,
+            fileType,
+            fileName,
+            roughness: 0, // 图片不需要粗糙效果
+            strokeWidth: 0 // 默认无边框
+        }
+    );
+};

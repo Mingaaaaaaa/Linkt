@@ -269,13 +269,13 @@ export const EraserIcon: React.FC<IconProps> = ({
 );
 
 export const UndoIcon: React.FC<IconProps> = ({
-  size = 24,
+  size = 20,
   color = 'currentColor',
   className,
   style
 }) => (
   <svg
-    width={size}
+    width={size - 5}
     height={size}
     viewBox='0 0 24 24'
     fill='none'
@@ -300,13 +300,13 @@ export const UndoIcon: React.FC<IconProps> = ({
 );
 
 export const RedoIcon: React.FC<IconProps> = ({
-  size = 22,
+  size = 20,
   color = 'currentColor',
   className,
   style
 }) => (
   <svg
-    width={size}
+    width={size - 5}
     height={size}
     viewBox='0 0 24 24'
     fill='none'
@@ -369,6 +369,33 @@ export const MenuIcon: React.FC<IconProps> = ({
       y1='18'
       x2='20'
       y2='18'
+      strokeWidth='2'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    />
+  </svg>
+);
+
+export const ImageIcon: React.FC<IconProps> = ({
+  size = 24,
+  color = 'currentColor',
+  className,
+  style
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke={color}
+    className={className}
+    style={style}
+    xmlns='http://www.w3.org/2000/svg'
+  >
+    <rect x='3' y='3' width='18' height='18' rx='2' ry='2' strokeWidth='2' />
+    <circle cx='8.5' cy='8.5' r='1.5' stroke='none' fill={color} />
+    <polyline
+      points='21 15 16 10 5 21'
       strokeWidth='2'
       strokeLinecap='round'
       strokeLinejoin='round'

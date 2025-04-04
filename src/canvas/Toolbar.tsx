@@ -16,7 +16,8 @@ import {
   FreeDrawIcon,
   HandIcon,
   EraserIcon,
-  MenuIcon
+  MenuIcon,
+  ImageIcon
 } from './components/Icons';
 
 interface ToolbarProps {
@@ -28,12 +29,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onOpenCollaborationDialog,
   collaborationSession
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const currentTool = useCanvasStore((state) => state.currentTool);
   const setCurrentTool = useCanvasStore((state) => state.setCurrentTool);
-  const [showMenu, setShowMenu] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-
-  // 添加网格和背景状态
   const showGrid = useCanvasStore((state) => state.showGrid);
   const setShowGrid = useCanvasStore((state) => state.setShowGrid);
   const viewBackgroundColor = useCanvasStore(
@@ -43,24 +44,50 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     (state) => state.setViewBackgroundColor
   );
 
-  const tools = [
-    { name: 'hand', icon: HandIcon, title: '平移工具' },
-    { name: 'selection', icon: SelectionIcon, title: '选择工具' },
-    { name: 'rectangle', icon: RectangleIcon, title: '矩形工具' },
-    { name: 'ellipse', icon: EllipseIcon, title: '椭圆工具' },
-    { name: 'arrow', icon: ArrowIcon, title: '箭头工具' },
-    { name: 'line', icon: LineIcon, title: '线条工具' },
-    { name: 'text', icon: TextIcon, title: '文本工具' },
-    { name: 'freeDraw', icon: FreeDrawIcon, title: '自由绘制' },
-    { name: 'eraser', icon: EraserIcon, title: '橡皮擦' }
-  ];
+  const handleToolSelect = (tool: ToolType) => {
+    setCurrentTool(tool);
 
-  const handleToolSelect = (toolName: string) => {
-    setCurrentTool(toolName as ToolType);
+    // 如果选择了图片工具，触发文件选择框
+    if (tool === 'image' && fileInputRef.current) {
+      fileInputRef.current.click();
+      // 选择文件后重置为选择工具
+      setTimeout(() => {
+        setCurrentTool('selection');
+      }, 100);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      if (event.target && event.target.result) {
+        // 创建并触发自定义事件
+        const imageLoadEvent = new CustomEvent('image-upload', {
+          detail: {
+            dataURL: event.target.result,
+            fileName: file.name,
+            fileType: file.type
+          }
+        });
+        document.dispatchEvent(imageLoadEvent);
+      }
+    };
+
+    reader.readAsDataURL(file);
+
+    // 重置input，以便可以再次选择相同的文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const toggleMenu = () => {
-    setShowMenu(!showMenu);
+    setIsMenuOpen(!isMenuOpen);
   };
 
   const handleToggleGrid = () => {
@@ -71,45 +98,60 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     setViewBackgroundColor(color);
   };
 
+  const tools = [
+    { name: 'selection', title: '选择 (V)', icon: SelectionIcon },
+    { name: 'rectangle', title: '矩形 (R)', icon: RectangleIcon },
+    { name: 'ellipse', title: '椭圆 (O)', icon: EllipseIcon },
+    { name: 'line', title: '直线 (L)', icon: LineIcon },
+    { name: 'arrow', title: '箭头 (A)', icon: ArrowIcon },
+    { name: 'text', title: '文本 (T)', icon: TextIcon },
+    { name: 'freeDraw', title: '自由绘制 (P)', icon: FreeDrawIcon },
+    { name: 'image', title: '插入图片 (I)', icon: ImageIcon },
+    { name: 'hand', title: '平移 (H)', icon: HandIcon },
+    { name: 'eraser', title: '橡皮擦 (E)', icon: EraserIcon }
+  ];
+
   return (
     <div
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
         display: 'flex',
-        alignItems: 'center',
         justifyContent: 'space-between',
         padding: '8px 16px',
-        backgroundColor: 'white',
-        background: 'transparent',
+        width: '100%',
+        position: 'fixed',
+        top: 0,
+        left: 0,
         zIndex: 1000,
-        pointerEvents: 'auto'
       }}
     >
-      <Tooltip text='菜单'>
-        <button
-          ref={menuButtonRef}
-          onClick={toggleMenu}
-          style={{
-            padding: '8px',
-            background: showMenu ? '#e0dfff' : 'transparent',
-            cursor: 'pointer',
-            border: showMenu ? '1px solid rgb(190, 189, 255)' : 'none',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <MenuIcon size={20} />
-        </button>
-      </Tooltip>
+      <button
+        ref={menuButtonRef}
+        onClick={toggleMenu}
+        style={{
+          margin: '8px',
+          border: '1px solid #ddd',
+          background: '#fff',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <MenuIcon size={20} color='#666' />
+      </button>
+
+      <input
+        type='file'
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept='image/*'
+        onChange={handleImageUpload}
+      />
 
       <MainMenu
-        isOpen={showMenu}
-        onClose={() => setShowMenu(false)}
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
         anchorEl={menuButtonRef.current}
         showGrid={showGrid}
         onToggleGrid={handleToggleGrid}
@@ -136,7 +178,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           return (
             <Tooltip key={tool.name} text={tool.title}>
               <button
-                onClick={() => handleToolSelect(tool.name)}
+                onClick={() => handleToolSelect(tool.name as ToolType)}
                 style={{
                   padding: '8px',
                   background: isSelected ? '#e0dfff' : 'transparent',

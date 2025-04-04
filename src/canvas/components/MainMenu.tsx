@@ -11,7 +11,12 @@ import {
   HelpIcon
 } from './MenuIcons.tsx';
 import { useCanvasStore } from '../../store';
-import { exportToPNG, exportToSVG } from '../utils/exportUtils';
+import {
+  exportToPNG,
+  exportToSVG,
+  saveToLinkt,
+  importFromLinkt
+} from '../utils/exportUtils';
 
 interface MainMenuProps {
   isOpen: boolean;
@@ -33,6 +38,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onChangeBackgroundColor
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 添加比例尺相关状态
   const showRulers = useCanvasStore((state) => state.showRulers);
@@ -50,6 +56,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   );
   const scrollX = useCanvasStore((state) => state.scrollX);
   const scrollY = useCanvasStore((state) => state.scrollY);
+  const replaceAllElements = useCanvasStore(
+    (state) => state.replaceAllElements
+  );
+  const setViewBackgroundColor = useCanvasStore(
+    (state) => state.setViewBackgroundColor
+  );
+  const setScrollPosition = useCanvasStore((state) => state.setScrollPosition);
+  const setZoom = useCanvasStore((state) => state.setZoom);
 
   // 添加本地状态以管理比例尺设置的展开状态
   const [isScaleSettingsExpanded, setIsScaleSettingsExpanded] =
@@ -98,6 +112,87 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     });
 
     onClose(); // 关闭菜单
+  };
+
+  // 添加保存为.linkt文件的处理函数
+  const handleSaveToLinkt = () => {
+    const elements = getNonDeletedElements();
+    const appState = {
+      viewBackgroundColor,
+      zoom,
+      selectedElementIds,
+      scrollX,
+      scrollY,
+      showGrid
+    };
+
+    saveToLinkt({
+      elements,
+      appState,
+      exportBackground: true,
+      exportPadding: 10,
+      filename: `linkt-canvas-${new Date().toISOString().slice(0, 10)}.linkt`
+    });
+
+    onClose(); // 关闭菜单
+  };
+
+  // 处理导入.linkt文件
+  const handleImportFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    try {
+      const files = event.target.files;
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      const file = files[0];
+      if (!file.name.endsWith('.linkt')) {
+        alert('请选择.linkt格式的文件');
+        return;
+      }
+
+      const result = await importFromLinkt(file);
+      if (result) {
+        // 更新画布状态
+        replaceAllElements(result.elements);
+
+        // 更新应用状态
+        if (result.appState) {
+          if (result.appState.viewBackgroundColor) {
+            setViewBackgroundColor(result.appState.viewBackgroundColor);
+          }
+          if (
+            result.appState.scrollX !== undefined &&
+            result.appState.scrollY !== undefined
+          ) {
+            setScrollPosition(result.appState.scrollX, result.appState.scrollY);
+          }
+          if (result.appState.zoom) {
+            setZoom(result.appState.zoom.value);
+          }
+        }
+      }
+
+      // 重置文件输入，以便能够重新选择相同的文件
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      onClose(); // 关闭菜单
+    } catch (error) {
+      console.error('导入文件失败:', error);
+      alert(
+        '导入文件失败: ' + (error instanceof Error ? error.message : '未知错误')
+      );
+    }
   };
 
   // 点击外部关闭菜单
@@ -177,10 +272,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 '#fff3bf',
                 '#d3f9d8',
                 '#e7f5ff',
-                '#edf2ff',
-                '#f3f0ff',
-                '#f8f0fc',
-                '#fff0f6'
+                '#edf2ff'
               ].map((color) => (
                 <div
                   key={color}
@@ -377,10 +469,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <h3 style={{ margin: '8px 16px', fontSize: '14px', color: '#666' }}>
             文件
           </h3>
+          <input
+            type='file'
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept='.linkt'
+            onChange={handleFileSelected}
+          />
           <MenuItem
             icon={<ImportIcon size={18} />}
             label='打开文件'
-            onClick={() => {}}
+            onClick={handleImportFile}
             shortcut='Ctrl+O'
           />
           <MenuItem
@@ -388,7 +487,53 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             label='保存画板'
             onClick={() => {}}
             shortcut='Ctrl+S'
-          />
+          >
+            <div
+              style={{
+                marginTop: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}
+            >
+              <button
+                className='sub-menu-button'
+                onClick={handleSaveToLinkt}
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  width: 'max-content',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  padding: '6px 12px'
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#e9ecef')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                }
+              >
+                保存到本地
+              </button>
+              <button
+                className='sub-menu-button'
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  width: 'max-content',
+                  borderRadius: '4px',
+                  cursor: 'not-allowed',
+                  opacity: '0.6',
+                  transition: 'all 0.2s',
+                  padding: '6px 12px'
+                }}
+              >
+                保存到云端 (尚未实现)
+              </button>
+            </div>
+          </MenuItem>
           <MenuItem
             icon={<ExportIcon size={18} />}
             label='导出图片'

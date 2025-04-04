@@ -163,7 +163,7 @@ export const GridFillIcon: React.FC<IconProps> = ({
     strokeLinecap='round'
     strokeLinejoin='round'
   >
-    <g clip-path='url(#a)'>
+    <g clipPath='url(#a)'>
       <path
         d='M5.879 2.625h8.242a3.254 3.254 0 0 1 3.254 3.254v8.242a3.254 3.254 0 0 1-3.254 3.254H5.88a3.254 3.254 0 0 1-3.254-3.254V5.88a3.254 3.254 0 0 1 3.254-3.254Z'
         stroke='currentColor'
@@ -222,7 +222,7 @@ export const SolidFillIcon: React.FC<IconProps> = ({
     strokeLinecap='round'
     strokeLinejoin='round'
   >
-    <g clip-path='url(#a)'>
+    <g clipPath='url(#a)'>
       <path
         d='M4.91 2.625h10.18a2.284 2.284 0 0 1 2.285 2.284v10.182a2.284 2.284 0 0 1-2.284 2.284H4.909a2.284 2.284 0 0 1-2.284-2.284V4.909a2.284 2.284 0 0 1 2.284-2.284Z'
         stroke='currentColor'
