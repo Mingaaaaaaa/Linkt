@@ -43,6 +43,8 @@ import {
 
 import { getScenePointerCoords } from './utils/coordinateUtils';
 import { ContextMenu } from './components/ContextMenu';
+import { AIDialog } from './components/AIDialog';
+import { Toolbar } from './Toolbar';
 
 interface CanvasProps {
   width: number;
@@ -126,6 +128,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   // 添加比例尺相关状态
   const showRulers = useCanvasStore((state) => state.showRulers);
   const rulerUnit = useCanvasStore((state) => state.rulerUnit);
+
+  // 添加 AIDialog 相关状态
+  const [showAIDialog, setShowAIDialog] = useState(false);
 
   // 手动触发渲染函数
   const forceRender = () => {
@@ -961,6 +966,9 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // 组件卸载时断开连接
   useEffect(() => {
+    setTimeout(() => {
+      console.log(elements);
+    }, 1000);
     return () => {
       if (collaborationService.isInRoom()) {
         collaborationService.leaveRoom();
@@ -1597,6 +1605,11 @@ export const Canvas: React.FC<CanvasProps> = ({
         touchAction: 'none', // 阻止浏览器处理触摸事件
       }}
     >
+      <Toolbar
+        onOpenCollaborationDialog={() => setShowCollaborationDialog(true)}
+        collaborationSession={collaborationSession}
+        onOpenAIDialog={() => setShowAIDialog(true)}
+      />
       {/* 比例尺组件 */}
       {showRulers && (
         <ScaleRuler
@@ -1690,6 +1703,8 @@ export const Canvas: React.FC<CanvasProps> = ({
         position={contextMenu.position}
         canvasCoords={contextMenu.canvasCoords}
       />
+
+      <AIDialog open={showAIDialog} onClose={() => setShowAIDialog(false)} />
     </div>
   );
 };

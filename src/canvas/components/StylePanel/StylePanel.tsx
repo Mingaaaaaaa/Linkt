@@ -18,7 +18,7 @@ interface StylePanelProps {
 
 export const StylePanel: React.FC<StylePanelProps> = ({
   selectedElements,
-  position = { x: 20, y: 20 },
+  position = { x: 20, y: 80 },
   updateElement,
   startRecordingHistory,
   stopRecordingHistory

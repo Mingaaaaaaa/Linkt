@@ -16,6 +16,8 @@ export class Renderer {
     private roughCanvas: any;
     private ctx: CanvasRenderingContext2D;
     private roughGenerators: Map<string, any> = new Map();
+    private imageCache: Map<string, HTMLImageElement> = new Map();
+    private loadingImages: Set<string> = new Set();
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -30,6 +32,10 @@ export class Renderer {
         if (!this.ctx) {
             return;
         }
+
+        // 保存当前元素和状态
+        this.currentElements = elements;
+        this.currentAppState = appState;
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
@@ -368,7 +374,7 @@ export class Renderer {
         context.save();
 
         // 设置元素的透明度
-        context.globalAlpha = (element.opacity !== undefined ? element.opacity : 100) / 100;
+        context.globalAlpha = (element.opacity !== undefined ? element.opacity : 100);
 
         // 设置绘制样式
         context.strokeStyle = strokeColor;
@@ -425,44 +431,50 @@ export class Renderer {
         context: CanvasRenderingContext2D,
         element: ExcalidrawImageElement,
     ) {
-        // 检查是否有图像数据
-        if (!element.dataURL) return;
+        const { dataURL, width, height } = element;
 
-        // 创建图像对象
-        const img = new Image();
-        img.src = element.dataURL;
-
-        // 检查图像是否已加载
-        if (img.complete) {
-            // 图像已加载，直接绘制
-            context.drawImage(img, 0, 0, element.width, element.height);
-        } else {
-            // 设置加载完成时的处理函数
-            img.onload = () => {
-                context.drawImage(img, 0, 0, element.width, element.height);
-                // 重新渲染整个画布以显示加载的图像
-                if (this.canvas) {
-                    const elements = Array.from(document.querySelectorAll('[data-excalidraw-element]'));
-                    if (elements.length > 0) {
-                        this.canvas.dispatchEvent(new Event('update'));
-                    }
-                }
-            };
-            // 加载失败时的处理
-            img.onerror = () => {
-                // 绘制错误提示框
-                context.fillStyle = '#f8d7da';
-                context.fillRect(0, 0, element.width, element.height);
-                context.strokeStyle = '#721c24';
-                context.strokeRect(0, 0, element.width, element.height);
-
-                // 添加错误文本
-                context.fillStyle = '#721c24';
-                context.font = '14px sans-serif';
-                context.textAlign = 'center';
-                context.textBaseline = 'middle';
-                context.fillText('图片加载失败', element.width / 2, element.height / 2);
-            };
+        // 如果图片已经在缓存中，直接渲染
+        if (this.imageCache.has(dataURL)) {
+            const img = this.imageCache.get(dataURL)!;
+            context.drawImage(img, 0, 0, width, height);
+            return;
         }
+
+        // 如果图片正在加载中，不重复加载
+        if (this.loadingImages.has(dataURL)) {
+            return;
+        }
+
+        // 标记图片为加载中
+        this.loadingImages.add(dataURL);
+
+        const img = new Image();
+        img.src = dataURL;
+
+        img.onload = () => {
+            // 将加载完成的图片加入缓存
+            this.imageCache.set(dataURL, img);
+            // 从加载中集合移除
+            this.loadingImages.delete(dataURL);
+            // 重新渲染画布
+            this.render(this.getCurrentElements(), this.getCurrentAppState());
+        };
+
+        img.onerror = () => {
+            console.error('图片加载失败:', dataURL);
+            this.loadingImages.delete(dataURL);
+        };
+    }
+
+    // 添加获取当前元素和状态的方法
+    private currentElements: readonly NonDeletedExcalidrawElement[] = [];
+    private currentAppState: AppState | null = null;
+
+    private getCurrentElements() {
+        return this.currentElements;
+    }
+
+    private getCurrentAppState() {
+        return this.currentAppState!;
     }
 }

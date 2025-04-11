@@ -7,8 +7,6 @@ import {
   GithubIcon,
   ScaleIcon,
   SaveIcon,
-  SettingsIcon,
-  HelpIcon
 } from './MenuIcons.tsx';
 import { useCanvasStore } from '../../store';
 import {
@@ -246,11 +244,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       }}
     >
       <div style={{ padding: '8px 0' }}>
-        {/* 画板背景设置 */}
         <div className='menu-section'>
-          <h3 style={{ margin: '8px 16px', fontSize: '14px', color: '#666' }}>
-            画板
-          </h3>
           <MenuItem
             icon={<PaletteIcon size={18} />}
             label='背景设置'
@@ -490,7 +484,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           >
             <div
               style={{
-                marginTop: '8px',
+                marginTop: '4px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '6px'
@@ -541,7 +535,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           >
             <div
               style={{
-                marginTop: '8px',
+                marginTop: '4px',
                 display: 'flex',
                 flexDirection: 'row',
                 gap: '6px'
@@ -597,19 +591,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         {/* 其他选项 */}
         <div className='menu-section'>
           <MenuItem
-            icon={<SettingsIcon size={18} />}
-            label='设置'
-            onClick={() => {}}
-          />
-          <MenuItem
-            icon={<HelpIcon size={18} />}
-            label='帮助与反馈'
-            onClick={() => {}}
-          />
-          <MenuItem
             icon={<GithubIcon size={18} />}
             label='GitHub仓库'
-            onClick={() => {}}
+            onClick={() => {
+              window.open('https://github.com/Mingaaaaaaa/Linkt', '_blank');
+            }}
           />
         </div>
       </div>
@@ -695,7 +681,9 @@ const MenuItem: React.FC<MenuItemProps> = ({
           (e.currentTarget.style.backgroundColor = 'transparent')
         }
       >
-        <div style={{ marginRight: '12px', opacity: 0.8 }}>{icon}</div>
+        <div style={{ marginRight: '12px', opacity: 0.9, display: 'flex' }}>
+          {icon}
+        </div>
         <div style={{ flex: 1 }}>{label}</div>
         {shortcut && (
           <div style={{ fontSize: '12px', color: '#999', marginRight: '8px' }}>

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { AppState, ExcalidrawElement, ToolType, NonDeletedExcalidrawElement } from '../canvas/types'
 import { Scene } from '../canvas/Scene'
+import { AppState, ExcalidrawElement, ToolType, NonDeletedExcalidrawElement } from '../canvas/types'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
 // 定义历史记录项类型

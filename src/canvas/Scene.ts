@@ -16,7 +16,7 @@ export class Scene {
     }
 
     replaceAllElements(nextElements: readonly ExcalidrawElement[]) {
-        this.elements = [...nextElements];
+        this.elements = nextElements.filter(element => !element.isDeleted);
     }
 
     addElement(element: ExcalidrawElement) {

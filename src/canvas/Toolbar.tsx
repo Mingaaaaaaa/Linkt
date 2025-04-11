@@ -23,11 +23,13 @@ import {
 interface ToolbarProps {
   onOpenCollaborationDialog?: () => void;
   collaborationSession?: CollaborationSession | null;
+  onOpenAIDialog?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   onOpenCollaborationDialog,
-  collaborationSession
+  collaborationSession,
+  onOpenAIDialog
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -121,7 +123,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         position: 'fixed',
         top: 0,
         left: 0,
-        zIndex: 1000,
+        zIndex: 1000
       }}
     >
       <button
@@ -197,6 +199,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </Tooltip>
           );
         })}
+        <button
+          onClick={onOpenAIDialog}
+          style={{
+            marginLeft: '8px',
+            padding: '8px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title='AI 助手'
+        >
+          AI
+        </button>
       </div>
 
       <CollaborationButton
