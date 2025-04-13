@@ -1,172 +1,101 @@
-import React, { useState } from 'react';
+import { generateText } from 'ai';
+import React, { useState, useEffect } from 'react';
+import { SYSTEM_PROMPT } from './prompt';
 import { useCanvasStore } from '../../store';
+import {
+  getApiKey,
+  setApiKey,
+  AIProvider,
+  getCurrentProvider,
+  setCurrentProvider,
+  getCurrentAIClient
+} from './ai';
+import { PreviewCanvas } from './PreviewCanvas';
 
 interface AIDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-// 模拟 AI 服务
-const mockAIService = async (
+// 动态 AI 服务调用
+const aiService = async (
   prompt: string
 ): Promise<{ summary: string; elements: any[] }> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    const model = getCurrentAIClient();
+    if (!model) {
+      throw new Error('未配置 API Key 或 AI 提供商不可用');
+    }
 
-  // 模拟返回的数据
-  return {
-    summary:
-      '分析：前端性能优化主要分为加载优化、渲染优化和资源优化三大类。图中将这三类分别用矩形标示，并通过箭头表示逻辑流向。同时，添加一个使用 freeDraw 元素绘制的小人作为装饰，增强图形的趣味性。',
-    elements: [
-      {
-        id: 'rect1',
-        type: 'rectangle',
-        x: 100,
-        y: 50,
-        width: 150,
-        height: 60,
-        strokeColor: '#000000',
-        backgroundColor: '#d0f0fd',
-        strokeWidth: 1,
-        roughness: 1,
-        seed: 1
-      },
-      {
-        id: 'text1',
-        type: 'text',
-        x: 120,
-        y: 70,
-        width: 110,
-        height: 20,
-        strokeColor: '#000000',
-        text: '加载优化',
-        seed: 2
-      },
-      {
-        id: 'rect2',
-        type: 'rectangle',
-        x: 100,
-        y: 150,
-        width: 150,
-        height: 60,
-        strokeColor: '#000000',
-        backgroundColor: '#d0f0fd',
-        strokeWidth: 1,
-        roughness: 1,
-        seed: 3
-      },
-      {
-        id: 'text2',
-        type: 'text',
-        x: 120,
-        y: 170,
-        width: 110,
-        height: 20,
-        strokeColor: '#000000',
-        text: '渲染优化',
-        seed: 4
-      },
-      {
-        id: 'rect3',
-        type: 'rectangle',
-        x: 100,
-        y: 250,
-        width: 150,
-        height: 60,
-        strokeColor: '#000000',
-        backgroundColor: '#d0f0fd',
-        strokeWidth: 1,
-        roughness: 1,
-        seed: 5
-      },
-      {
-        id: 'text3',
-        type: 'text',
-        x: 120,
-        y: 270,
-        width: 110,
-        height: 20,
-        strokeColor: '#000000',
-        text: '资源优化',
-        seed: 6
-      },
-      {
-        id: 'arrow1',
-        type: 'arrow',
-        x: 150,
-        y: 110,
-        width: 0,
-        height: 40,
-        strokeColor: '#000000',
-        strokeWidth: 1,
-        roughness: 1,
-        seed: 7,
-        startArrowhead: null,
-        endArrowhead: 'arrow'
-      },
-      {
-        id: 'arrow2',
-        type: 'arrow',
-        x: 150,
-        y: 210,
-        width: 0,
-        height: 40,
-        strokeColor: '#000000',
-        strokeWidth: 1,
-        roughness: 1,
-        seed: 8,
-        startArrowhead: null,
-        endArrowhead: 'arrow'
-      },
-      {
-        id: 'freedraw_littleman',
-        type: 'freeDraw',
-        x: 300,
-        y: 200,
-        width: 40,
-        height: 80,
-        strokeColor: '#000000',
-        strokeWidth: 2,
-        roughness: 1,
-        seed: 9,
-        simulatePressure: false,
-        points: [
-          [20, 0],
-          [25, 5],
-          [30, 10],
-          [25, 15],
-          [20, 10],
-          [15, 15],
-          [10, 10],
-          [15, 5],
-          [20, 0], // 头部
-          [20, 10],
-          [20, 30], // 躯干
-          [20, 15],
-          [10, 25], // 左手
-          [20, 15],
-          [30, 25], // 右手
-          [20, 30],
-          [10, 45], // 左腿
-          [20, 30],
-          [30, 45] // 右腿
-        ]
-      }
-    ]
-  };
+    const { text, reasoning } = await generateText({
+      model: model('deepseek-chat'), // 对于 OpenAI 可能需要不同的模型名称
+      prompt: `${SYSTEM_PROMPT}\n\n用户需输入：${prompt}`
+    });
+
+    if (reasoning) {
+      console.log('AI 推理过程:', reasoning);
+    }
+
+    const result = JSON.parse(text);
+
+    if (!result.summary || !Array.isArray(result.elements)) {
+      console.log('AI 返回的数据结构不正确:', result);
+      throw new Error('AI 返回的数据结构不正确');
+    }
+
+    return result;
+  } catch (err) {
+    console.error('AI 服务错误:', err);
+    throw new Error(
+      `AI 服务错误: ${err instanceof Error ? err.message : '未知错误'}`
+    );
+  }
 };
 
 export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<{
     summary: string;
     elements: any[];
   } | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(
+    getCurrentProvider()
+  );
+
   const addElement = useCanvasStore((state) => state.addElement);
   const setSelectedElementIds = useCanvasStore(
     (state) => state.setSelectedElementIds
   );
+  const elements = useCanvasStore((state) => state.elements); // 获取当前画布上的所有元素
+
+  useEffect(() => {
+    setSelectedProvider(getCurrentProvider());
+    const storedKey = getApiKey(selectedProvider) || '';
+    setApiKeyInput(storedKey);
+  }, [selectedProvider]);
+
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setApiKeyInput(value);
+  };
+
+  const handleSaveApiKey = () => {
+    setApiKey(selectedProvider, apiKeyInput);
+    alert(`${selectedProvider} API 密钥已保存`);
+  };
+
+  const handleAiProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newProvider = e.target.value as AIProvider;
+    setSelectedProvider(newProvider);
+    setCurrentProvider(newProvider);
+
+    // 读取新提供商的 API 密钥
+    const storedKey = getApiKey(newProvider) || '';
+    setApiKeyInput(storedKey);
+  };
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
@@ -176,10 +105,13 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
     setResponse(null);
 
     try {
-      const result = await mockAIService(prompt);
+      const result = await aiService(prompt);
       setResponse(result);
     } catch (err) {
-      setError('AI 服务暂时不可用，请稍后再试');
+      console.error('处理 AI 响应时出错:', err);
+      setError(
+        err instanceof Error ? err.message : 'AI 服务暂时不可用，请稍后再试'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -195,17 +127,160 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
   const handleInsert = () => {
     if (!response?.elements) return;
 
-    // 创建选中元素的 ID 映射
     const selectedElementIds: Record<string, boolean> = {};
 
+    // 计算所有新元素的边界框
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    // 查找AI生成元素的边界
     response.elements.forEach((element) => {
-      addElement(element);
-      selectedElementIds[element.id] = true;
+      if (element.x < minX) minX = element.x;
+      if (element.y < minY) minY = element.y;
+      if (element.x + (element.width || 0) > maxX)
+        maxX = element.x + (element.width || 0);
+      if (element.y + (element.height || 0) > maxY)
+        maxY = element.y + (element.height || 0);
     });
 
-    // 设置选中状态
+    // 计算整体宽度和高度
+    const groupWidth = maxX - minX;
+    const groupHeight = maxY - minY;
+
+    // 检查画布上现有元素的位置，找到一个合适的插入位置
+    const findSuitablePosition = () => {
+      // 默认位置（可以是画布的中心或自定义起始位置）
+      let posX = 100;
+      let posY = 100;
+
+      // 检查位置是否合适（不与现有元素重叠）
+      const isPositionSuitable = (x: number, y: number) => {
+        // 检查新插入组的边界框
+        const newGroupBounds = {
+          left: x,
+          top: y,
+          right: x + groupWidth,
+          bottom: y + groupHeight
+        };
+
+        // 检查是否与现有元素重叠
+        for (const element of elements) {
+          const elementBounds = {
+            left: element.x,
+            top: element.y,
+            right: element.x + (element.width || 0),
+            bottom: element.y + (element.height || 0)
+          };
+
+          // 简单的矩形重叠检测
+          if (
+            !(
+              newGroupBounds.right < elementBounds.left ||
+              newGroupBounds.left > elementBounds.right ||
+              newGroupBounds.bottom < elementBounds.top ||
+              newGroupBounds.top > elementBounds.bottom
+            )
+          ) {
+            return false; // 有重叠
+          }
+        }
+
+        return true; // 没有重叠
+      };
+
+      // 网格搜索可用位置
+      const gridSize = 100; // 搜索步长
+      const maxAttempts = 20; // 最大尝试次数
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // 在画布上不同位置尝试
+        for (
+          let offsetY = 0;
+          offsetY <= attempt * gridSize;
+          offsetY += gridSize
+        ) {
+          for (
+            let offsetX = 0;
+            offsetX <= attempt * gridSize;
+            offsetX += gridSize
+          ) {
+            // 尝试右下方向
+            if (isPositionSuitable(posX + offsetX, posY + offsetY)) {
+              return { x: posX + offsetX, y: posY + offsetY };
+            }
+
+            // 尝试左下方向
+            if (
+              offsetX > 0 &&
+              isPositionSuitable(posX - offsetX, posY + offsetY)
+            ) {
+              return { x: posX - offsetX, y: posY + offsetY };
+            }
+
+            // 尝试右上方向
+            if (
+              offsetY > 0 &&
+              isPositionSuitable(posX + offsetX, posY - offsetY)
+            ) {
+              return { x: posX + offsetX, y: posY - offsetY };
+            }
+
+            // 尝试左上方向
+            if (
+              offsetX > 0 &&
+              offsetY > 0 &&
+              isPositionSuitable(posX - offsetX, posY - offsetY)
+            ) {
+              return { x: posX - offsetX, y: posY - offsetY };
+            }
+          }
+        }
+      }
+
+      // 如果实在找不到合适位置，返回默认位置或随机位置
+      return { x: posX + Math.random() * 200, y: posY + Math.random() * 200 };
+    };
+
+    // 获取合适的位置
+    const suitablePosition = findSuitablePosition();
+
+    // 计算偏移量
+    const offsetX = suitablePosition.x - minX;
+    const offsetY = suitablePosition.y - minY;
+
+    response.elements.forEach((element) => {
+      // 生成随机ID，确保不会与现有元素冲突
+      const randomId = `element-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      // 复制元素，替换ID并调整位置
+      const elementWithNewId = {
+        ...element,
+        id: randomId,
+        x: element.x + offsetX,
+        y: element.y + offsetY
+      };
+
+      addElement(elementWithNewId);
+      selectedElementIds[randomId] = true;
+    });
+
     setSelectedElementIds(selectedElementIds);
     onClose();
+  };
+
+  // 处理回车键触发生成
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 检查是否按下了回车键且没有按下Shift键（避免影响换行）
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // 防止添加换行符
+      if (!isLoading && prompt.trim()) {
+        handleSubmit();
+      }
+    }
   };
 
   if (!open) return null;
@@ -228,8 +303,8 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
       <div
         style={{
           width: '90%',
-          maxWidth: '600px',
-          maxHeight: '80vh',
+          maxWidth: '800px',
+          maxHeight: '90vh',
           backgroundColor: 'white',
           borderRadius: '8px',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
@@ -247,7 +322,6 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
         >
           AI 助手
         </div>
-
         <div
           style={{
             padding: '24px',
@@ -263,12 +337,82 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
               width: '100%'
             }}
           >
+            <div
+              style={{
+                display: 'flex',
+                gap: '32px',
+                justifyContent: 'start'
+              }}
+            >
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <label
+                  style={{
+                    alignSelf: 'center',
+                    fontSize: '14px',
+                    width: 'max-content'
+                  }}
+                >
+                  AI 提供商:
+                </label>
+                <select
+                  value={selectedProvider}
+                  onChange={handleAiProviderChange}
+                  style={{
+                    minWidth: '150px',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  <option value='deepseek'>DeepSeek</option>
+                  <option value='openai'>OpenAI</option>
+                  <option value='anthropic'>Anthropic</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex' }}>
+                <span style={{ fontSize: '14px' }}>API Key:</span>
+                <div style={{ display: 'flex', gap: '8px', width: '95%' }}>
+                  <input
+                    type='password'
+                    value={apiKeyInput}
+                    onChange={handleApiKeyChange}
+                    placeholder={`请输入 ${selectedProvider} API Key`}
+                    style={{
+                      minWidth: '250px',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleSaveApiKey}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#4a90e2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                保存
+              </button>
+            </div>
             <textarea
               value={prompt}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setPrompt(e.target.value)
               }
-              placeholder='请输入您的需求...'
+              onKeyDown={handleKeyDown}
+              placeholder='请输入您的需求... (按回车键生成)'
               disabled={isLoading}
               style={{
                 width: '95%',
@@ -311,26 +455,59 @@ export const AIDialog: React.FC<AIDialogProps> = ({ open, onClose }) => {
                     backgroundColor: '#f8f9fa',
                     borderRadius: '4px',
                     fontSize: '14px',
-                    maxHeight: '200px',
+                    maxHeight: '150px',
                     overflow: 'auto'
                   }}
                 >
                   {response.summary}
                 </div>
-                <div
-                  style={{
-                    padding: '12px',
-                    backgroundColor: '#f8f9fa',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    maxHeight: '200px',
-                    overflow: 'auto'
-                  }}
-                >
-                  <pre style={{ margin: 0 }}>
-                    {JSON.stringify(response.elements, null, 2)}
-                  </pre>
+
+                <div style={{ marginTop: '12px' }}>
+                  <div
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      marginBottom: '8px',
+                      color: '#555'
+                    }}
+                  >
+                    预览效果:
+                  </div>
+                  <PreviewCanvas
+                    elements={response.elements}
+                    width={700}
+                    height={350}
+                  />
                 </div>
+
+                <details style={{ marginTop: '8px' }}>
+                  <summary
+                    style={{
+                      cursor: 'pointer',
+                      color: '#666',
+                      fontSize: '13px',
+                      padding: '4px',
+                      userSelect: 'none'
+                    }}
+                  >
+                    查看原始数据
+                  </summary>
+                  <div
+                    style={{
+                      padding: '12px',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      maxHeight: '200px',
+                      overflow: 'auto',
+                      marginTop: '8px'
+                    }}
+                  >
+                    <pre style={{ margin: 0 }}>
+                      {JSON.stringify(response.elements, null, 2)}
+                    </pre>
+                  </div>
+                </details>
               </>
             )}
           </div>

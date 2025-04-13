@@ -74,7 +74,6 @@ export const ScaleRuler: React.FC<ScaleRulerProps> = ({
 
     // 计算最适合当前缩放级别的刻度间隔
     let interval = calculateTickInterval(zoom, unitFactor);
-    const pixelInterval = interval * zoom;
 
     // 计算起始刻度位置
     const startX = Math.floor(-scrollX / zoom / interval) * interval;

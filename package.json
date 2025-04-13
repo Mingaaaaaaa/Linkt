@@ -11,6 +11,10 @@
     "preview": "rsbuild preview"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.9",
+    "@ai-sdk/deepseek": "^0.2.9",
+    "@ai-sdk/openai": "^1.3.10",
+    "ai": "^4.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "roughjs": "^4.6.6",
